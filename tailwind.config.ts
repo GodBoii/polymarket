@@ -22,7 +22,11 @@ const config: Config = {
         signal: {
           success: "#00FF88",
           warning: "#FFD166",
-          danger: "#FF5577",
+          danger: "#FF5959",
+        },
+        arena: {
+          line: "rgba(255,255,255,0.08)",
+          lineStrong: "rgba(255,255,255,0.16)",
         },
       },
       fontFamily: {

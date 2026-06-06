@@ -16,7 +16,7 @@
   --accent-soft: rgba(0, 229, 255, 0.16);
   --success: #00ff88;
   --warning: #ffd166;
-  --danger: #ff5577;
+  --danger: #ff5959;
   --max: 1480px;
 }
 
@@ -166,3 +166,90 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 /* For sections that need a hard full-bleed */
 .full-bleed { width: 100%; }
+
+/* ===== ARENA — cinematic primitives ===== */
+
+/* Floating glass panel used for live status / mission control */
+.arena-glass {
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Subtle 80px grid behind hero for institutional depth */
+.arena-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 80px 80px;
+  background-position: -1px -1px;
+}
+
+/* Hide horizontal scrollbar (used on terminal sections) */
+.arena-scrollbar-hide::-webkit-scrollbar { display: none; }
+.arena-scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Word-by-word reveal keyframe for big editorial headlines */
+@keyframes arena-word-rise {
+  0% { opacity: 0; transform: translateY(28px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.arena-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(28px);
+  animation: arena-word-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Cinematic tracking for hero headline */
+.arena-display {
+  font-family: var(--font-geist), var(--font-inter), system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.08em;
+  line-height: 0.85;
+}
+
+/* Soft 0.5px inner border (used for cards) */
+.arena-card {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 200ms ease, background 200ms ease;
+}
+.arena-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+/* Mono-cap tabular telemetry number */
+.arena-num {
+  font-family: var(--font-geist), var(--font-inter), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+/* Terminal chrome — used by LiveReasoning */
+.arena-terminal {
+  background: #04070a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Caret blink */
+@keyframes arena-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.arena-caret {
+  display: inline-block;
+  width: 7px;
+  height: 12px;
+  background: #00e5ff;
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: arena-blink 1s steps(1) infinite;
+}
+
+/* Vertical rule used inside cards */
+.arena-vrule { width: 1px; background: rgba(255, 255, 255, 0.08); }

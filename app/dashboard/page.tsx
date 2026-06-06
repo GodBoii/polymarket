@@ -176,10 +176,23 @@ function Dashboard({ email }: { email: string }) {
         <div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-3 px-5 py-4 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-6 w-6">
-              <div className="absolute inset-0 rounded-full border border-accent" style={{ boxShadow: "0 0 12px rgba(0,229,255,0.5)" }} />
-              <div className="absolute inset-1.5 rounded-full bg-accent" style={{ boxShadow: "0 0 16px rgba(0,229,255,0.8)" }} />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: "linear-gradient(135deg, transparent 50%, #00E7FF 50%)",
+                }}
+              />
+              <div className="absolute inset-0.5 bg-ink-950" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span
+                  className="font-mono text-accent text-[10px]"
+                  style={{ letterSpacing: "0.18em" }}
+                >
+                  P
+                </span>
+              </div>
             </div>
-            <span className="font-display text-lg" style={{ letterSpacing: "-0.02em" }}>ORACLE</span>
+            <span className="font-display text-lg text-white" style={{ letterSpacing: "-0.02em" }}>POLYCOGNITIVE</span>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-white/35 sm:inline">/ Agent Console</span>
           </Link>
           <div className="flex items-center gap-2">

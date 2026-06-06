@@ -1,13 +1,24 @@
 "use client";
 
-import { ArrowUpRight, Github, Twitter, Linkedin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
+import Hairline from "./arena/primitives/Hairline";
+import MonoLabel from "./arena/primitives/MonoLabel";
+import { AGENT } from "./arena/data/agent";
+
+const FOOTER_LINKS = {
+  Mission: ["The Arena", "Forecast Engine", "Intelligence", "Reasoning", "Leaderboard"],
+  Agent:   ["POLY-09", "Model Card", "Audit Trail", "Changelog", "Status"],
+  Research:["Calibration", "Backtests", "Methodology", "Papers", "Datasets"],
+  Press:   ["Brand Kit", "Contact", "Press Brief"],
+};
 
 export default function Footer() {
   const ref = useRef<HTMLElement>(null);
   const [t, setT] = useState(0);
+
   useEffect(() => {
-    let raf: number;
+    let raf = 0;
     const start = performance.now();
     const loop = (now: number) => {
       setT((now - start) / 1000);
@@ -18,129 +29,96 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer
-      ref={ref}
-      className="relative w-full bg-ink-950 overflow-hidden"
-      style={{ minHeight: "100vh" }}
-    >
-      {/* Flows behind typography */}
-      <div className="absolute inset-0 z-0 opacity-30">
-        <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
-          <defs>
-            <linearGradient id="footerFlow" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#00E5FF" stopOpacity="0" />
-              <stop offset="50%" stopColor="#00E5FF" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#00FF88" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          {Array.from({ length: 14 }).map((_, i) => {
-            const startX = (i * 73) % 1000;
-            const endX = ((i * 73) + 600 + (i % 3) * 200) % 1000;
-            const y = 80 + (i * 47) % 480;
-            const controlY = y - 60 - (i % 4) * 20;
-            const offset = (t * 60 + i * 150) % 1000;
+    <footer ref={ref} className="relative w-full bg-ink-950 overflow-hidden" style={{ minHeight: "100vh" }}>
+      {/* Live prediction streams */}
+      <div className="absolute inset-0 z-0 opacity-50">
+        <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
+          {Array.from({ length: 18 }).map((_, i) => {
+            const y = 60 + (i * 41) % 620;
+            const startX = (i * 67) % 1000;
+            const endX = (startX + 700 + (i % 3) * 200) % 1000;
+            const controlY = y - 80 - (i % 4) * 20;
+            const offset = (t * 80 + i * 200) % 1000;
             return (
-              <path
-                key={i}
-                d={`M ${startX} ${y} Q 500 ${controlY} ${endX} ${y + (i % 2 === 0 ? -10 : 10)}`}
-                fill="none"
-                stroke="url(#footerFlow)"
-                strokeWidth="0.8"
-                strokeDasharray="50 950"
-                strokeDashoffset={-offset}
-                opacity={0.3 + (i % 3) * 0.2}
-              />
+              <g key={i}>
+                <path
+                  d={`M ${startX} ${y} Q 500 ${controlY} ${endX} ${y + (i % 2 === 0 ? -10 : 10)}`}
+                  fill="none"
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeWidth="0.8"
+                />
+                <path
+                  d={`M ${startX} ${y} Q 500 ${controlY} ${endX} ${y + (i % 2 === 0 ? -10 : 10)}`}
+                  fill="none"
+                  stroke={i % 4 === 0 ? "#00E7FF" : "rgba(255,255,255,0.4)"}
+                  strokeWidth="0.9"
+                  strokeDasharray="60 940"
+                  strokeDashoffset={-offset}
+                  opacity={i % 4 === 0 ? 0.85 : 0.3}
+                />
+              </g>
             );
           })}
         </svg>
       </div>
 
-      {/* Giant ORACLE wordmark */}
-      <div className="relative z-10 w-full flex items-center justify-center pointer-events-none" style={{ minHeight: "60vh" }}>
+      {/* Giant agent wordmark */}
+      <div className="relative z-10 w-full flex items-start justify-center pointer-events-none" style={{ minHeight: "55vh", paddingTop: "8vh" }}>
         <div
           className="font-display text-white select-none"
           style={{
-            fontSize: "25vw",
+            fontSize: "22vw",
             lineHeight: 0.85,
             letterSpacing: "-0.04em",
             fontWeight: 500,
             opacity: 0.03,
           }}
         >
-          ORACLE
+          POLYCOGNITIVE
         </div>
       </div>
 
-      {/* Foreground footer content */}
-      <div className="relative z-10 page-x pb-10">
-        <div className="border-t border-white/8 pt-12">
-          <div className="grid grid-cols-12 gap-8">
-            <div className="col-span-12 md:col-span-5">
-              <div className="font-display text-3xl text-white mb-3" style={{ letterSpacing: "-0.02em" }}>
-                ORACLE
-              </div>
-              <p className="text-white/55 text-sm leading-relaxed max-w-sm">
-                The world&apos;s forecasting engine. Real-time intelligence for real-world events. Built in São Paulo, London, and Singapore.
-              </p>
-              <div className="mt-6 flex items-center gap-3">
-                <a href="#" className="h-9 w-9 rounded-full border border-white/10 flex items-center justify-center text-white/55 hover:text-white hover:border-white/20 transition-colors">
-                  <Twitter size={14} />
-                </a>
-                <a href="#" className="h-9 w-9 rounded-full border border-white/10 flex items-center justify-center text-white/55 hover:text-white hover:border-white/20 transition-colors">
-                  <Linkedin size={14} />
-                </a>
-                <a href="#" className="h-9 w-9 rounded-full border border-white/10 flex items-center justify-center text-white/55 hover:text-white hover:border-white/20 transition-colors">
-                  <Github size={14} />
-                </a>
-              </div>
+      {/* Foreground content */}
+      <div className="relative z-10 page-x pb-12 -mt-24 md:-mt-32">
+        <Hairline strong />
+        <div className="grid grid-cols-12 gap-8 pt-12">
+          <div className="col-span-12 md:col-span-4">
+            <div className="font-display text-white text-2xl" style={{ letterSpacing: "-0.02em" }}>
+              POLYCOGNITIVE
             </div>
-            <div className="col-span-6 md:col-span-2">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-white/40 mb-4">Markets</div>
-              <ul className="space-y-2 text-sm text-white/70">
-                <li><a href="#" className="hover:text-white">World Cup</a></li>
-                <li><a href="#" className="hover:text-white">Champions League</a></li>
-                <li><a href="#" className="hover:text-white">Premier League</a></li>
-                <li><a href="#" className="hover:text-white">Ballon d'Or</a></li>
-                <li><a href="#" className="hover:text-white">Copa América</a></li>
-              </ul>
-            </div>
-            <div className="col-span-6 md:col-span-2">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-white/40 mb-4">Product</div>
-              <ul className="space-y-2 text-sm text-white/70">
-                <li><a href="#" className="hover:text-white">Forecaster AI</a></li>
-                <li><a href="#" className="hover:text-white">API</a></li>
-                <li><a href="#" className="hover:text-white">Mobile</a></li>
-                <li><a href="#" className="hover:text-white">Pricing</a></li>
-                <li><a href="#" className="hover:text-white">Changelog</a></li>
-              </ul>
-            </div>
-            <div className="col-span-12 md:col-span-3">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-white/40 mb-4">Get the daily brief</div>
-              <p className="text-white/55 text-sm leading-relaxed mb-4">
-                The most important probability moves of the last 24 hours, in your inbox.
-              </p>
-              <form className="flex items-center gap-2 border border-white/10 rounded-full pl-4 pr-1 py-1">
-                <input
-                  placeholder="you@domain.com"
-                  className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/30 py-2"
-                />
-                <button type="button" className="h-8 w-8 rounded-full bg-white text-ink-950 flex items-center justify-center">
-                  <ArrowUpRight size={14} />
-                </button>
-              </form>
+            <MonoLabel tone="faint" className="mt-2 block">
+              STAIR&nbsp;AI&nbsp;ARENA · {AGENT.codename} · v{AGENT.modelVersion.replace("v", "")}
+            </MonoLabel>
+            <p className="mt-6 text-white/55 text-sm leading-relaxed max-w-sm">
+              One agent. Forty-seven competitors. One published probability per second. The reasoning is the product.
+            </p>
+            <div className="mt-6 flex items-center gap-2">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-signal-success" style={{ boxShadow: "0 0 6px #00FF88" }} />
+              <MonoLabel>Tournament ACTIVE</MonoLabel>
             </div>
           </div>
-          <div className="mt-12 pt-6 border-t border-white/8 flex flex-wrap items-center justify-between gap-4 text-[11px] font-mono uppercase tracking-widest text-white/40">
-            <div className="flex items-center gap-4">
-              <span>© 2026 ORACLE Labs Ltd.</span>
-              <a href="#" className="hover:text-white/70">Privacy</a>
-              <a href="#" className="hover:text-white/70">Terms</a>
-              <a href="#" className="hover:text-white/70">Disclosures</a>
+
+          {Object.entries(FOOTER_LINKS).map(([title, links]) => (
+            <div key={title} className="col-span-6 md:col-span-2">
+              <MonoLabel tone="faint" className="mb-4 block">{title}</MonoLabel>
+              <ul className="space-y-2 text-sm">
+                {links.map((l) => (
+                  <li key={l}>
+                    <a href="#" className="text-white/70 hover:text-white transition-colors">{l}</a>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-signal-success animate-pulse-soft" />
-              <span>All systems normal</span>
-            </div>
+          ))}
+        </div>
+
+        <div className="mt-16 pt-6 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-4">
+          <MonoLabel tone="faint">© 2026 POLYCOGNITIVE · Menlo Park · London · Singapore</MonoLabel>
+          <div className="flex items-center gap-4">
+            <MonoLabel tone="faint">184.2M datapoints/hr</MonoLabel>
+            <a href="#" className="font-mono text-[10px] text-white/55 hover:text-white uppercase" style={{ letterSpacing: "0.18em" }}>
+              Audit log <ArrowUpRight size={11} className="inline -mt-0.5 ml-1" />
+            </a>
           </div>
         </div>
       </div>

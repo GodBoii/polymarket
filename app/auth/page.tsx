@@ -33,7 +33,7 @@ function AuthForm() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const title = useMemo(() => (mode === "signin" ? "Sign in to ORACLE" : "Create your ORACLE account"), [mode]);
+  const title = useMemo(() => (mode === "signin" ? "Sign in to POLYCOGNITIVE" : "Create your POLYCOGNITIVE account"), [mode]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -78,7 +78,7 @@ function AuthForm() {
         <section className="flex min-h-[42vh] flex-col justify-between px-6 py-6 md:px-12 md:py-10">
           <Link href="/" className="inline-flex w-fit items-center gap-2 text-sm text-white/60 hover:text-white">
             <ArrowLeft size={16} />
-            ORACLE
+            POLYCOGNITIVE
           </Link>
 
           <div className="max-w-3xl pb-10">

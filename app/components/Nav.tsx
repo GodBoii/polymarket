@@ -1,24 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, LayoutDashboard, Search } from "lucide-react";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { LayoutDashboard, ArrowUpRight } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 const SECTIONS = [
-  { id: "markets", label: "Markets" },
-  { id: "rivers", label: "Rivers" },
-  { id: "match", label: "Match" },
-  { id: "sentiment", label: "Sentiment" },
-  { id: "tournaments", label: "Tournaments" },
-  { id: "ai", label: "AI" },
-  { id: "discover", label: "Discover" },
+  { id: "arena",        label: "Arena" },
+  { id: "engine",       label: "Engine" },
+  { id: "intelligence", label: "Intelligence" },
+  { id: "reasoning",    label: "Reasoning" },
+  { id: "leaderboard",  label: "Leaderboard" },
+  { id: "edge",         label: "Edge" },
 ];
 
 export default function Nav() {
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
-  const [active, setActive] = useState<string>("");
+  const [active, setActive] = useState<string>("hero");
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
@@ -61,33 +60,60 @@ export default function Nav() {
   return (
     <header
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-black/55 backdrop-blur-xl border-b border-white/8" : ""
+        scrolled ? "bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.06]" : ""
       }`}
     >
       <div className="page-x flex items-center justify-between h-16 md:h-20">
-        <a href="#" className="flex items-center gap-3">
+        <a href="#hero" className="flex items-center gap-3">
           <div className="relative h-6 w-6">
-            <div className="absolute inset-0 rounded-full border border-accent" style={{ boxShadow: "0 0 12px rgba(0,229,255,0.5)" }} />
-            <div className="absolute inset-1.5 rounded-full bg-accent" style={{ boxShadow: "0 0 16px rgba(0,229,255,0.8)" }} />
+            <div
+              className="absolute inset-0"
+              style={{
+                background: "linear-gradient(135deg, transparent 50%, #00E7FF 50%)",
+              }}
+            />
+            <div className="absolute inset-0.5 bg-ink-950" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span
+                className="font-mono text-accent text-[10px]"
+                style={{ letterSpacing: "0.18em" }}
+              >
+                P
+              </span>
+            </div>
           </div>
-          <span className="font-display text-white text-lg" style={{ letterSpacing: "-0.02em" }}>ORACLE</span>
+          <span
+            className="font-display text-white"
+            style={{ letterSpacing: "-0.02em", fontSize: "16px", fontWeight: 500 }}
+          >
+            POLYCOGNITIVE
+          </span>
+          <span
+            className="font-mono text-white/40 hidden md:inline"
+            style={{ letterSpacing: "0.22em", fontSize: "10px" }}
+          >
+            ·&nbsp;STAIR&nbsp;ARENA
+          </span>
         </a>
 
         <nav className="hidden lg:flex items-center gap-1">
-          {SECTIONS.map((s) => (
+          {SECTIONS.map((s, i) => (
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="relative px-3 py-2 text-sm font-mono uppercase tracking-widest transition-colors"
-              style={{ color: active === s.id ? "#ffffff" : "rgba(255,255,255,0.55)" }}
+              className="relative px-3 py-2 text-[11px] font-mono uppercase transition-colors"
+              style={{
+                letterSpacing: "0.18em",
+                color: active === s.id ? "#ffffff" : "rgba(255,255,255,0.55)",
+              }}
             >
-              <span className="text-accent mr-1.5">{String(SECTIONS.indexOf(s) + 1).padStart(2, "0")}</span>
+              <span className="text-accent mr-1.5">{String(i + 1).padStart(2, "0")}</span>
               {s.label}
               {active === s.id && (
                 <motion.div
                   layoutId="nav-active"
                   className="absolute inset-x-2 -bottom-px h-px bg-accent"
-                  style={{ boxShadow: "0 0 8px rgba(0,229,255,0.5)" }}
+                  style={{ boxShadow: "0 0 8px rgba(0,231,255,0.5)" }}
                 />
               )}
             </a>
@@ -95,10 +121,6 @@ export default function Nav() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <button className="hidden md:flex items-center gap-2 px-3 py-2 border border-white/10 rounded-full text-sm text-white/55 hover:text-white hover:border-white/20 transition-colors">
-            <Search size={14} />
-            <span className="font-mono text-[11px] uppercase tracking-widest">Search markets</span>
-          </button>
           {signedIn ? (
             <a href="/dashboard" className="btn btn-primary !py-2 !px-4 !text-sm">
               <LayoutDashboard size={14} />
@@ -106,7 +128,8 @@ export default function Nav() {
             </a>
           ) : (
             <a href="/auth" className="btn btn-primary !py-2 !px-4 !text-sm">
-              Sign in <ArrowUpRight size={14} />
+              Mission Control
+              <ArrowUpRight size={14} />
             </a>
           )}
         </div>

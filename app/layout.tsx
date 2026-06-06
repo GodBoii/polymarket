@@ -21,12 +21,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ORACLE — The world's forecasting engine",
+  title: "POLYCOGNITIVE — Stair AI Arena",
   description:
-    "ORACLE is the real-time intelligence marketplace where the world trades probabilities on football, global tournaments, and world events.",
+    "POLYCOGNITIVE is the tournament's highest-ranked forecasting agent. We publish probabilities, explain every move, and let the reasoning stand on its own.",
   openGraph: {
-    title: "ORACLE — The world's forecasting engine",
-    description: "Real-time collective intelligence. Trade probabilities on the future.",
+    title: "POLYCOGNITIVE — Stair AI Arena",
+    description: "The tournament's highest-ranked forecasting agent. Public reasoning. Auditable decisions.",
     type: "website",
   },
 };
