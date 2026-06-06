@@ -36,7 +36,8 @@ app.add_middleware(
 
 
 class RunRequest(BaseModel):
-    fixture_id: int = DEFAULT_FIXTURE_ID
+    mode: str = "auto"
+    fixture_id: int | None = None
     dry_run: bool = True
 
 
@@ -78,8 +79,9 @@ def get_run(run_id: str) -> dict[str, Any]:
 def create_run(request: RunRequest) -> dict[str, Any]:
     run_id = str(uuid.uuid4())
     s = store()
-    s.create_run(run_id, request.fixture_id)
-    result = run_pipeline(request.fixture_id, dry_run=request.dry_run, event_sink=lambda *_args, **_kwargs: None)
+    initial_fixture_id = request.fixture_id or 0
+    s.create_run(run_id, initial_fixture_id, mode=request.mode)
+    result = run_pipeline(request.fixture_id, dry_run=request.dry_run, mode=request.mode, event_sink=lambda *_args, **_kwargs: None)
     s.update_run(run_id, status="completed", fixture=result.get("fixture"), result=result)
     return {"id": run_id, "status": "completed", "result": result}
 
@@ -90,11 +92,12 @@ async def websocket_run(websocket: WebSocket) -> None:
     s = store()
     try:
         message = await websocket.receive_json()
-        fixture_id = int(message.get("fixture_id") or DEFAULT_FIXTURE_ID)
+        mode = str(message.get("mode") or ("manual" if message.get("fixture_id") else "auto"))
+        fixture_id = int(message["fixture_id"]) if message.get("fixture_id") else None
         dry_run = bool(message.get("dry_run", True))
         run_id = str(uuid.uuid4())
-        s.create_run(run_id, fixture_id)
-        await websocket.send_json({"type": "run_started", "run_id": run_id, "fixture_id": fixture_id})
+        s.create_run(run_id, fixture_id or 0, mode=mode)
+        await websocket.send_json({"type": "run_started", "run_id": run_id, "fixture_id": fixture_id, "mode": mode})
 
         def emit(event_type: str, stage: str, payload: dict[str, Any]) -> None:
             s.add_event(run_id, event_type, stage, payload)
@@ -105,8 +108,9 @@ async def websocket_run(websocket: WebSocket) -> None:
             )
 
         loop = asyncio.get_running_loop()
-        result = await asyncio.to_thread(run_pipeline, fixture_id, dry_run, emit)
-        s.update_run(run_id, status="completed", fixture=result.get("fixture"), result=result)
+        result = await asyncio.to_thread(run_pipeline, fixture_id, dry_run, emit, mode)
+        selected_fixture_id = (result.get("fixture") or {}).get("fixture_id") or fixture_id or 0
+        s.update_run(run_id, status="completed", fixture_id=selected_fixture_id, fixture=result.get("fixture"), result=result)
         await websocket.send_json({"type": "run_completed", "run_id": run_id, "result": result})
     except WebSocketDisconnect:
         return

@@ -26,11 +26,12 @@ class LocalRunStore:
     def _write(self, data: dict[str, Any]) -> None:
         LOCAL_STORE_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=True, default=str), encoding="utf-8")
 
-    def create_run(self, run_id: str, fixture_id: int, status: str = "running") -> dict[str, Any]:
+    def create_run(self, run_id: str, fixture_id: int, status: str = "running", mode: str = "manual") -> dict[str, Any]:
         data = self._read()
         run = {
             "id": run_id,
             "fixture_id": fixture_id,
+            "mode": mode,
             "status": status,
             "fixture": None,
             "result": None,
@@ -97,11 +98,14 @@ class SupabaseRunStore:
             "Prefer": "return=representation",
         }
 
-    def create_run(self, run_id: str, fixture_id: int, status: str = "running") -> dict[str, Any]:
-        payload = {"id": run_id, "fixture_id": fixture_id, "status": status}
+    def create_run(self, run_id: str, fixture_id: int, status: str = "running", mode: str = "manual") -> dict[str, Any]:
+        payload = {"id": run_id, "fixture_id": fixture_id, "status": status, "mode": mode}
         response = requests.post(f"{self.base}/agent_runs", headers=self.headers, json=payload, timeout=30)
         if response.status_code == 404:
-            return self.local.create_run(run_id, fixture_id, status)
+            return self.local.create_run(run_id, fixture_id, status, mode)
+        if response.status_code == 400 and "mode" in response.text:
+            payload.pop("mode", None)
+            response = requests.post(f"{self.base}/agent_runs", headers=self.headers, json=payload, timeout=30)
         response.raise_for_status()
         return response.json()[0]
 
