@@ -150,7 +150,7 @@ export default function FinalCTA() {
             The world&apos;s beliefs. One marketplace. Open an account in 90 seconds, deposit in any currency, and start forecasting the events that matter to you.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-            <a className="btn btn-primary" href="#">
+            <a className="btn btn-primary" href="/auth">
               Start forecasting
               <ArrowUpRight size={16} />
             </a>

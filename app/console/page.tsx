@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, LogOut, Play, RefreshCcw, Radio, UserRound } from "lucide-react";
+import Link from "next/link";
+import AuthGate from "../components/AuthGate";
 import { supabase } from "../lib/supabase";
 
 type EventRow = {
@@ -28,9 +30,14 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8001";
 
 export default function Page() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  return (
+    <AuthGate>
+      {(session) => <ConsolePage sessionEmail={session.user.email || "operator"} />}
+    </AuthGate>
+  );
+}
+
+function ConsolePage({ sessionEmail }: { sessionEmail: string }) {
   const [fixtureId, setFixtureId] = useState(19609127);
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [selectedRun, setSelectedRun] = useState<RunRow | null>(null);
@@ -117,29 +124,15 @@ export default function Page() {
     loadRuns();
   }, []);
 
-  async function signIn(e: FormEvent) {
-    e.preventDefault();
-    setError("");
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      setError(signInError.message);
-      return;
-    }
-    const { data } = await supabase.auth.getSession();
-    setSessionEmail(data.session?.user.email ?? null);
-  }
-
   async function signOut() {
+    if (wsRef.current) wsRef.current.close();
     await supabase.auth.signOut();
-    setSessionEmail(null);
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSessionEmail(data.session?.user.email ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSessionEmail(session?.user.email ?? null);
-    });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+    };
   }, []);
 
   return (
@@ -149,34 +142,17 @@ export default function Page() {
           <Radio size={18} />
           <span>World Cup Arena Agent</span>
         </header>
-        {sessionEmail ? (
-          <div className="session">
-            <UserRound size={16} />
-            <span>{sessionEmail}</span>
-            <button className="ghost" onClick={signOut}>
-              <LogOut size={14} />
-            </button>
-          </div>
-        ) : (
-          <form className="login" onSubmit={signIn}>
-            <input
-              type="email"
-              placeholder="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              placeholder="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button type="submit">Sign in</button>
-            {error && <p className="error">{error}</p>}
-          </form>
-        )}
+        <div className="session">
+          <UserRound size={16} />
+          <span>{sessionEmail}</span>
+          <button className="ghost" onClick={signOut}>
+            <LogOut size={14} />
+          </button>
+        </div>
+
+        <Link className="dashboard-link" href="/dashboard">
+          Dashboard
+        </Link>
 
         <section className="runs">
           <header>
@@ -296,6 +272,20 @@ export default function Page() {
           background: #f1f3f7;
           padding: 8px 10px;
           border-radius: 8px;
+        }
+        .session span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .dashboard-link {
+          display: flex;
+          justify-content: center;
+          border: 1px solid #d9dee7;
+          background: #f7f8fa;
+          padding: 9px 10px;
+          border-radius: 6px;
+          font-size: 14px;
         }
         .login {
           display: flex;

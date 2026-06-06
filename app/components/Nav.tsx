@@ -83,7 +83,7 @@ export default function Nav() {
             <Search size={14} />
             <span className="font-mono text-[11px] uppercase tracking-widest">Search markets</span>
           </button>
-          <a href="#" className="btn btn-primary !py-2 !px-4 !text-sm">
+          <a href="/auth" className="btn btn-primary !py-2 !px-4 !text-sm">
             Sign in <ArrowUpRight size={14} />
           </a>
         </div>
