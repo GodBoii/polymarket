@@ -63,11 +63,19 @@ Runs the pipeline synchronously. This is useful for API testing but not ideal fo
 
 `WebSocket /ws/runs`
 
-Starts a live run and streams stage events. Send:
+Starts a live run and streams stage events. Default auto-scout payload:
 
 ```json
-{"fixture_id":19609127,"dry_run":true}
+{"mode":"auto","dry_run":true}
 ```
+
+Manual fixture override:
+
+```json
+{"mode":"manual","fixture_id":19609127,"dry_run":true}
+```
+
+Legacy payloads with only `fixture_id` are treated as manual mode.
 
 The first message is:
 
@@ -75,14 +83,23 @@ The first message is:
 {"type":"run_started","run_id":"...","fixture_id":19609127}
 ```
 
-During execution the backend streams:
+During execution the backend streams low-level and UI-friendly events:
 
 - `stage_started`
 - `tool_result`
 - `token`
 - `stage_completed`
+- `chat_message`
+- `tool_call_started`
+- `tool_call_completed`
+- `candidate_ranked`
+- `fixture_selected`
+- `decision`
+- `ledger_record`
 - `run_completed`
 - `error`
+
+See [Working](working.md) for the full Polycognitive agent flow.
 
 ## Storage
 

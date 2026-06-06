@@ -35,23 +35,29 @@ These values are read by Next.js from local environment variables.
 
 1. Sign in with Supabase email/password.
 2. Open `/console`.
-3. Confirm fixture ID `19609127`.
-4. Start a run.
-5. Watch stage events and token stream update.
+3. Click **Polycognitive agent**.
+4. Watch the chat-style transcript update with scout messages, tool cards, ledger cards, and a final decision card.
+5. Use manual fixture override only when debugging a known SportMonks fixture.
 6. Inspect past runs from the sidebar.
 
 ## WebSocket Flow
 
-The console opens:
+The dashboard opens:
 
 ```text
 ws://localhost:8001/ws/runs
 ```
 
-It sends:
+Default auto-scout run:
 
 ```json
-{"fixture_id":19609127,"dry_run":true}
+{"mode":"auto","dry_run":true}
+```
+
+Manual fixture override:
+
+```json
+{"mode":"manual","fixture_id":19609127,"dry_run":true}
 ```
 
 The backend then streams:

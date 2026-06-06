@@ -1,127 +1,55 @@
-# Polymarket World Cup Arena Architecture
+# Architecture
 
-This project is an agentic research-and-trading system for the Stair AI World Cup Agent Arena. The goal is to separate football signal gathering, market signal gathering, historical-prior research, prediction, strategy, execution, and audit logging into clear stages.
+## System Shape
 
-## Core Idea
+ORACLE has two main parts:
 
-The system treats the Sportmonks fixture ID as the anchor identity for a match. From that single fixture ID, the backend resolves:
+- Next.js frontend: authenticated dashboard, run history, and chat-style transcript.
+- FastAPI backend: agent orchestration, provider access, strategy execution, run storage, and Reasoning Ledger construction.
 
-- football data from Sportmonks,
-- market data from Polymarket,
-- historical priors from Supabase,
-- a prediction from MiMo through Agno,
-- a strategy decision,
-- an optional order,
-- and a reasoning/audit trace.
+The backend is the only place that should hold arena, model, or service-role secrets.
 
-The important design principle is that the prediction stage should be independent from the live market stage. The prediction agent should primarily see football and historical evidence. The strategy agent then compares that independent belief against Polymarket pricing to decide if there is an edge.
+## Data Providers
 
-## Agent Flow
+SportMonks is the fixture truth source. The schedule tells ORACLE which matches exist; fixture details provide teams, kickoff time, predictions, odds, and match context.
 
-1. Fixture Selector
-   - Input: target fixture ID or schedule.
-   - Output: normalized fixture identity.
+Polymarket is the market truth source. The arena fixture mapping connects SportMonks fixture IDs to Polymarket event slugs. Gamma provides market metadata and CLOB token IDs. CLOB midpoint calls provide current implied prices.
 
-2. Sportmonks Research Agent
-   - Input: fixture ID.
-   - Output: pre-game football digest.
-   - Data includes participants, kickoff, Sportmonks predictions, odds, and xG when available.
+Supabase is the historical-prior source. The `world_cup_arena` schema contains tournament aggregates such as country style, knockout patterns, stage records, special-match records, manager records, and head-to-head history.
 
-3. Polymarket Market Agent
-   - Input: fixture ID / fixture code.
-   - Output: market pricing digest.
-   - Data includes event slug, market condition IDs, YES token IDs, and CLOB midpoints.
+## Backend Boundaries
 
-4. Supabase Historical Agent
-   - Input: country identifiers.
-   - Output: historical priors digest.
-   - Data includes country style, structure, knockout patterns, stage records, special-match records, and head-to-head rows when available.
+The backend separates responsibilities:
 
-5. Prediction Agent
-   - Input: Sportmonks digest + Supabase digest.
-   - Output: independent probability prediction.
+- `scout.py`: schedule flattening, candidate scoring, probability helpers.
+- `toolkits.py`: provider/tool wrappers for SportMonks, Polymarket, Supabase, arena trading, and ledger endpoints.
+- `ledger.py`: Reasoning Ledger record builder and dry-run/live submission behavior.
+- `pipeline.py`: orchestration across scout, tools, agents, prediction, strategy, executor, and ledger.
+- `server.py`: HTTP/WebSocket API surface.
 
-6. Strategy Agent
-   - Input: prediction + Polymarket digest.
-   - Output: trade/no-trade decision.
+## Reasoning Ledger Model
 
-7. Executor
-   - Input: strategy.
-   - Output: dry-run order payload, real order response, or skipped trade.
+Ledger records follow the arena-facing `Reasoning-ledger.md` contract:
 
-8. Ledger Writer
-   - Input: all prior stages.
-   - Output: dry-run ledger records or submitted arena ledger batch.
+- `Observing`: the dashboard run trigger.
+- `ToolCalling`: SportMonks, Polymarket, Supabase, executor, and other provider actions.
+- `Thinking`: structured digest summaries and strategy reasoning summaries.
+- `Acting`: prediction commitment and order/skip-order decision.
 
-## Provider Roles
+`agent_id` is omitted because the arena injects it from the API key. `Thinking.output_payload` is stringified when the source output is structured JSON. Batches are capped at 50 records.
 
-Sportmonks answers: what is happening in football?
+## Frontend Boundaries
 
-Supabase answers: what does tournament history suggest?
+The dashboard does not render private model chain-of-thought. It renders:
 
-Polymarket answers: what does the market currently believe, and what can we trade?
+- agent-facing summaries,
+- tool cards,
+- candidate cards,
+- final decision cards,
+- optional debug JSON.
 
-MiMo + Agno answer: how do we turn messy provider data into structured reasoning outputs?
+This keeps the interface useful for operators without exposing hidden reasoning or forcing users to read raw logs.
 
-## Toolkits
+## Why Auto Scout Exists
 
-The backend has three toolkit groups.
-
-`ArenaDataToolkit`
-
-- `get_sportmonks_schedule`
-- `get_sportmonks_fixture`
-- `get_polymarket_mapping`
-- `get_polymarket_event`
-- `get_polymarket_midpoint`
-- `get_arena_polymarket_market`
-- `get_supabase_catalog`
-- `get_supabase_rows`
-
-`ArenaTradingToolkit`
-
-- `get_agent_profile`
-- `get_exposure`
-- `submit_order`
-- `get_order_status`
-- `close_order`
-
-`ArenaLedgerToolkit`
-
-- `submit_ledger_batch`
-
-The data toolkit is safe for research agents. Trading tools should only be exposed to executor/bet agents.
-
-## Local Demo Mode
-
-For the local demo, backend runs on:
-
-```text
-http://localhost:8001
-ws://localhost:8001/ws/runs
-```
-
-The frontend runs on:
-
-```text
-http://localhost:3000
-```
-
-The backend attempts to save runs/events to the new Supabase project. If the Supabase `agent_runs` and `agent_events` tables do not exist yet, it falls back to local JSON storage at:
-
-```text
-python-backend/storage/app_runs.json
-```
-
-This fallback exists so demos work even before Supabase schema setup is finished.
-
-## Production Direction
-
-For the deployed Vercel frontend to call the laptop backend, expose the backend through a public tunnel such as Cloudflare Tunnel. Then set:
-
-```text
-NEXT_PUBLIC_API_URL=https://your-public-backend-url
-NEXT_PUBLIC_WS_URL=wss://your-public-backend-url
-```
-
-Keep the service-role Supabase key only in the backend environment. Never expose it to Vercel frontend code.
+The sample notebook hardcoded `19609127` for Mexico vs South Africa. ORACLE's production behavior needs autonomy: it should inspect available World Cup markets and choose where analysis is most useful. Auto scout makes fixture selection data-driven and keeps manual fixture IDs as a debugging tool rather than the normal user flow.

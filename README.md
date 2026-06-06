@@ -50,6 +50,8 @@ https://polymarket-six-eta.vercel.app
 
 ## Docs
 
+- [Functionality](docs/functionality.md)
+- [Working](docs/working.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Backend](docs/BACKEND.md)
 - [Frontend](docs/FRONTEND.md)
