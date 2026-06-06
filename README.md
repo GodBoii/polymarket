@@ -47,3 +47,9 @@ The backend allows this deployed origin by default:
 ```text
 https://polymarket-six-eta.vercel.app
 ```
+
+## Docs
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Backend](docs/BACKEND.md)
+- [Frontend](docs/FRONTEND.md)
