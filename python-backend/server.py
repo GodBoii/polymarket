@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import uuid
 from typing import Any
 
@@ -17,9 +18,17 @@ from store import SupabaseRunStore
 load_env()
 
 app = FastAPI(title="Polymarket Arena Agent Backend")
+allowed_origins = [
+    "http://localhost:3000",
+    "https://polymarket-six-eta.vercel.app",
+]
+extra_origin = os.environ.get("FRONTEND_ORIGIN")
+if extra_origin:
+    allowed_origins.append(extra_origin.rstrip("/"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
