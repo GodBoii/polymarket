@@ -1,12 +1,15 @@
 create table if not exists public.agent_runs (
   id uuid primary key,
   fixture_id bigint not null,
+  mode text not null default 'manual',
   status text not null default 'running',
   fixture jsonb,
   result jsonb,
   created_at timestamptz not null default now(),
   completed_at timestamptz
 );
+
+alter table public.agent_runs add column if not exists mode text not null default 'manual';
 
 create table if not exists public.agent_events (
   id bigserial primary key,
