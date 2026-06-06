@@ -33,15 +33,22 @@ class ArenaDataToolkit(Toolkit):
         response.raise_for_status()
         return response.json()
 
-    def get_sportmonks_fixture(self, fixture_id: int) -> dict[str, Any]:
+    def get_sportmonks_fixture(self, fixture_id: int, include: str | None = None) -> dict[str, Any]:
         """Fetch fixture participants, predictions, odds and xG from Sportmonks through the Stair AI proxy."""
         url = f"{ARENA_BASE_URL}/api/v1/data/proxy/sportmonks/v3/football/fixtures/{fixture_id}"
         response = requests.get(
             url,
-            params={"include": "participants;predictions;odds;xGFixture"},
+            params={"include": include or "participants;predictions;odds;xGFixture;venue;weatherReport;lineups;sidelined;coaches;referees;stage;round"},
             headers=arena_headers(),
             timeout=60,
         )
+        if response.status_code >= 400 and include is None:
+            response = requests.get(
+                url,
+                params={"include": "participants;predictions;odds;xGFixture"},
+                headers=arena_headers(),
+                timeout=60,
+            )
         response.raise_for_status()
         return response.json()
 

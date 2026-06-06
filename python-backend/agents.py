@@ -111,7 +111,7 @@ Return this schema:
   "home_code": str,
   "away_code": str,
   "available_signals": [str],
-  "probabilities": {{"MEX": float|null, "draw": float|null, "ZAF": float|null}},
+  "probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}},
   "bookmaker_count": int|null,
   "confidence": "low"|"medium"|"high",
   "data_gaps": [str],
@@ -119,7 +119,7 @@ Return this schema:
 }}
 
 Probability values must be decimals from 0 to 1, not percentages.
-Use the actual team short codes as probability keys. Do not use placeholder keys like HOME_CODE or AWAY_CODE.
+Use the actual team short codes as probability keys. Do not use placeholder keys like HOME_CODE, HOME_TEAM_CODE, AWAY_CODE, or AWAY_TEAM_CODE.
 
 Context:
 {fixture_context}
@@ -135,7 +135,7 @@ Return this schema:
   "source": "polymarket",
   "event_slug": str|null,
   "event_title": str|null,
-  "implied_probabilities": {{"MEX": float|null, "draw": float|null, "ZAF": float|null}},
+  "implied_probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}},
   "sum_implied_probability": float|null,
   "execution_handles": [
     {{"outcome": str, "condition_id": str|null, "yes_token_id": str|null, "mid": float|null}}
