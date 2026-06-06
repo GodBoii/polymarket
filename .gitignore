@@ -1,10 +1,10 @@
 .env
 *.env
 !.env.example
-frontend/.env.local
-frontend/node_modules/
-frontend/.next/
-frontend/out/
+node_modules/
+.next/
+out/
+*.tsbuildinfo
 python-backend/storage/
 __pycache__/
 *.pyc

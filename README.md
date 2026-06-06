@@ -24,7 +24,7 @@ ws://localhost:8001/ws/runs
 
 ## Frontend
 
-The frontend lives in `frontend/` and can be deployed on Vercel. Set:
+The Next.js frontend lives at the repository root and can be deployed on Vercel. Set:
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
