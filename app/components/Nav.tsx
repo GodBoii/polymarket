@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion";
-import { ChevronDown, ArrowUpRight, Search } from "lucide-react";
+import { ArrowUpRight, LayoutDashboard, Search } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 const SECTIONS = [
   { id: "markets", label: "Markets" },
@@ -18,6 +19,21 @@ export default function Nav() {
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState<string>("");
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setSignedIn(!!data.session);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setSignedIn(!!session);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   useMotionValueEvent(scrollY, "change", (v) => {
     setScrolled(v > 60);
@@ -83,9 +99,16 @@ export default function Nav() {
             <Search size={14} />
             <span className="font-mono text-[11px] uppercase tracking-widest">Search markets</span>
           </button>
-          <a href="/auth" className="btn btn-primary !py-2 !px-4 !text-sm">
-            Sign in <ArrowUpRight size={14} />
-          </a>
+          {signedIn ? (
+            <a href="/dashboard" className="btn btn-primary !py-2 !px-4 !text-sm">
+              <LayoutDashboard size={14} />
+              Dashboard
+            </a>
+          ) : (
+            <a href="/auth" className="btn btn-primary !py-2 !px-4 !text-sm">
+              Sign in <ArrowUpRight size={14} />
+            </a>
+          )}
         </div>
       </div>
     </header>

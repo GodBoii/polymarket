@@ -42,9 +42,15 @@ export default function AuthGate({ children }: { children: (session: Session) =>
 
   if (checking || !session) {
     return (
-      <main className="min-h-screen bg-[#f6f7f9] text-[#17202a] grid place-items-center">
-        <div className="border border-[#d9dee7] bg-white px-4 py-3 text-sm text-[#617083]">
-          Checking session
+      <main className="relative min-h-screen bg-ink-950 text-white grid place-items-center">
+        <div className="vignette" aria-hidden />
+        <div className="grain" aria-hidden />
+        <div className="relative z-10 flex items-center gap-3 border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white/70 backdrop-blur-xl">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+          </span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">Checking session</span>
         </div>
       </main>
     );
