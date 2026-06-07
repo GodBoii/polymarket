@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from agno.db.json import JsonDb
-from agno.models.xiaomi import MiMo
+from agno.models.openrouter import OpenRouter
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,8 +13,7 @@ ARENA_BASE_URL = "https://staging.stair-ai.com"
 SUPABASE_URL = "https://ezvbmtvrvzageqixvdak.supabase.co"
 SUPABASE_KEY = "sb_publishable__m8bOkD05ToFwATpaWST5w_2-3fGS7V"
 
-MIMO_BASE_URL = "https://token-plan-ams.xiaomimimo.com/v1"
-MIMO_MODEL = "mimo-v2.5-pro"
+OPENROUTER_MODEL = "deepseek/deepseek-v4-flash"
 
 SPORTMONKS_SEASON_ID = 26618
 DEFAULT_FIXTURE_ID = 19609127
@@ -57,14 +56,12 @@ def build_db() -> JsonDb:
     return JsonDb(db_path=str(STORAGE_DIR / "json_db"))
 
 
-def build_mimo_model() -> MiMo:
-    mimo_api_key = os.environ.get("MIMO_API_KEY")
-    if not mimo_api_key:
-        raise RuntimeError("Missing MIMO_API_KEY in .env")
+def build_openrouter_model() -> OpenRouter:
+    openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not openrouter_api_key:
+        raise RuntimeError("Missing OPENROUTER_API_KEY in .env")
 
-    return MiMo(
-        id=MIMO_MODEL,
-        api_key=mimo_api_key,
-        base_url=MIMO_BASE_URL,
-        use_thinking=False,
+    return OpenRouter(
+        id=OPENROUTER_MODEL,
+        api_key=openrouter_api_key,
     )

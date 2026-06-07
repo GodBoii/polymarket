@@ -20,6 +20,8 @@ from agents import (
 from config import DEFAULT_FIXTURE_ID, build_db, load_env
 from ledger import LedgerSink
 from scout import choose_best_candidate, clamp_probability, edge_pp, flatten_schedule, probability_to_percent, score_candidate
+from sportmonks_features import build_sportmonks_features
+from strategy_features import build_strategy_context, probability_for_market_outcome
 from supabase_context import build_supabase_context
 from toolkits import ArenaDataToolkit, ArenaTradingToolkit, build_moneyline_from_gamma, normalize_fixture
 from utils import compact_json, extract_json_object, run_content
@@ -119,14 +121,17 @@ def build_sportmonks_context(fixture_envelope: dict[str, Any]) -> dict[str, Any]
     home = next((p for p in participants if p.get("meta", {}).get("location") == "home"), {})
     away = next((p for p in participants if p.get("meta", {}).get("location") == "away"), {})
     odds = fixture.get("odds") or []
+    features = build_sportmonks_features(fixture)
     return {
         "fixture": fixture.get("name"),
         "fixture_id": fixture.get("id"),
         "starting_at": fixture.get("starting_at"),
         "home": {"name": home.get("name"), "short_code": home.get("short_code"), "id": home.get("id"), "country_id": home.get("country_id")},
         "away": {"name": away.get("name"), "short_code": away.get("short_code"), "id": away.get("id"), "country_id": away.get("country_id")},
+        "features": features,
         "prediction_rows": fixture.get("predictions") or [],
-        "odds_sample": odds[:120],
+        "match_result_odds_rows": features.get("odds", {}).get("match_result_rows") or [],
+        "odds_sample": odds[:80],
         "odds_total_rows": len(odds),
         "xg_rows": fixture.get("xgfixture") or [],
         "venue": fixture.get("venue"),
@@ -247,23 +252,25 @@ def execute_strategy(strategy: dict[str, Any], fixture_code: str, trading: Arena
 
 def summarize_final(fixture: dict[str, Any], prediction: dict[str, Any], polymarket_digest: dict[str, Any], strategy: dict[str, Any], execution: dict[str, Any]) -> dict[str, Any]:
     outcome = strategy.get("outcome") or prediction.get("outcome")
+    team_code = strategy.get("team_code") or outcome
     market_probability = None
     implied = polymarket_digest.get("implied_probabilities")
-    if isinstance(implied, dict) and outcome:
-        market_probability = implied.get(outcome)
+    if isinstance(implied, dict) and team_code:
+        market_probability = implied.get(team_code)
     if market_probability is None:
         for handle in polymarket_digest.get("execution_handles") or []:
-            if handle.get("outcome") == outcome:
+            if handle.get("outcome") == team_code:
                 market_probability = handle.get("mid")
                 break
+    selected_prediction_probability = probability_for_market_outcome(prediction, team_code, implied)
     return {
         "selected_fixture": fixture,
         "prediction_outcome": outcome,
-        "prediction_probability": clamp_probability(prediction.get("probability")),
-        "prediction_probability_display": probability_to_percent(prediction.get("probability")),
+        "prediction_probability": selected_prediction_probability,
+        "prediction_probability_display": probability_to_percent(selected_prediction_probability),
         "market_probability": clamp_probability(market_probability),
         "market_probability_display": probability_to_percent(market_probability),
-        "edge_pp": strategy.get("edge_pp") if strategy.get("edge_pp") is not None else edge_pp(prediction.get("probability"), market_probability),
+        "edge_pp": strategy.get("edge_pp") if strategy.get("edge_pp") is not None else edge_pp(selected_prediction_probability, market_probability),
         "should_trade": bool(strategy.get("should_trade")),
         "trade": {
             "team_code": strategy.get("team_code"),
@@ -352,7 +359,8 @@ def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink
     )
     emit(event_sink, "ledger_record", "ledger", ledger.records[-1])
 
-    strategy = run_agent_json(strategy_agent(db, session_id), prompt_for_strategy(prediction, polymarket_digest), "strategy_agent", event_sink)
+    strategy_context = build_strategy_context(prediction, polymarket_digest)
+    strategy = run_agent_json(strategy_agent(db, session_id), prompt_for_strategy(strategy_context), "strategy_agent", event_sink)
     strategy = normalize_strategy(strategy)
     ledger.thinking(prompt="Strategy decision", description="Strategy decision.", output_payload=strategy)
     emit(event_sink, "ledger_record", "ledger", ledger.records[-1])
