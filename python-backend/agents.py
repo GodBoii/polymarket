@@ -3,7 +3,7 @@ from typing import Any
 from agno.agent import Agent
 from agno.db.json import JsonDb
 
-from config import build_mimo_model
+from config import build_openrouter_model
 
 
 JSON_RULES = [
@@ -17,7 +17,7 @@ JSON_RULES = [
 def make_agent(name: str, role: str, db: JsonDb, session_id: str) -> Agent:
     return Agent(
         name=name,
-        model=build_mimo_model(),
+        model=build_openrouter_model(),
         db=db,
         session_id=session_id,
         user_id="polymarket-arena-builder",
@@ -25,6 +25,7 @@ def make_agent(name: str, role: str, db: JsonDb, session_id: str) -> Agent:
         instructions=JSON_RULES,
         markdown=False,
         telemetry=False,
+        debug_mode=True,
     )
 
 
@@ -101,6 +102,12 @@ def prompt_for_sportmonks_digest(fixture_context: dict[str, Any]) -> str:
     return f"""
 Digest the Sportmonks pre-game data for one fixture.
 
+Prefer the decoded `features` object when it is available. In particular:
+- Use `features.predictions.fulltime_result_probability` for the 1X2 full-time outcome probabilities.
+- Do not treat `FIRST_HALF_WINNER_PROBABILITY` or `TEAM_TO_SCORE_FIRST_PROBABILITY` as full-time win/draw/loss.
+- Use `features.odds.match_result_vig_free_consensus` for bookmaker consensus, because it is filtered to match-result odds and has bookmaker margin removed.
+- Use raw `prediction_rows` and `match_result_odds_rows` only as audit/detail context.
+
 Return this schema:
 {{
   "source": "sportmonks",
@@ -112,6 +119,8 @@ Return this schema:
   "away_code": str,
   "available_signals": [str],
   "probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}},
+  "bookmaker_consensus_probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}}|null,
+  "expected_goals": {{"HOME_TEAM_CODE": float|null, "AWAY_TEAM_CODE": float|null}}|null,
   "bookmaker_count": int|null,
   "confidence": "low"|"medium"|"high",
   "data_gaps": [str],
@@ -198,18 +207,23 @@ Supabase digest:
 """
 
 
-def prompt_for_strategy(prediction: dict[str, Any], polymarket_digest: dict[str, Any]) -> str:
+def prompt_for_strategy(strategy_context: dict[str, Any]) -> str:
     return f"""
 Decide whether to trade using a conservative $100 demo bankroll.
 
 Rules:
-- Edge = prediction probability for the chosen outcome minus market implied probability.
-- If absolute edge is below 5 percentage points, do not trade.
+- Evaluate every listed outcome, not only the most likely predicted outcome.
+- Edge = prediction probability for that outcome minus Polymarket implied probability for the same outcome.
+- Positive edge means the outcome's YES market appears underpriced and can be bought.
+- Negative edge means that specific YES market appears overpriced; do not buy that YES market.
+- If no outcome has positive edge of at least 5 percentage points, do not trade.
 - Maximum trade size is $5.
-- Use only long/buy-YES orders for now. If the best idea is shorting, set should_trade=false and explain.
+- Stair arena orders are submitted as buy-YES orders using fixture_code/team_code. Therefore, when one outcome is overpriced, express the fade by buying YES on the underpriced alternative outcome with the best positive edge when one exists.
+- You may discuss a short/fade thesis in the rationale, but if should_trade=true the executable order must be direction="long", team_code must be the outcome to buy YES on, and limit_price must be near that outcome's YES mid.
 - limit_price should be near but not wildly above the market mid for the selected YES token.
 - If should_trade=false, direction must be "none", size_usdc must be "0", limit_price must be null, and team_code must be null.
 - If should_trade=true, direction must be "long", team_code must be one of the available outcome codes, size_usdc must be 1.00 to 5.00, and limit_price must be a number.
+- Prefer the provided `best_buy_yes` candidate when it exists, unless you can justify a more conservative no-trade due to low confidence or missing pricing.
 
 Return this schema:
 {{
@@ -224,9 +238,6 @@ Return this schema:
   "rationale": str
 }}
 
-Prediction:
-{prediction}
-
-Polymarket digest:
-{polymarket_digest}
+Strategy context:
+{strategy_context}
 """
