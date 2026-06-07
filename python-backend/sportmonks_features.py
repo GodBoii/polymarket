@@ -263,6 +263,60 @@ def extract_xg_features(
     return result if any(value is not None for value in result.values()) else None
 
 
+def _metadata_items(fixture: dict[str, Any]) -> list[dict[str, Any]]:
+    metadata = fixture.get("metadata") or fixture.get("metadata_") or fixture.get("meta_data") or []
+    if isinstance(metadata, dict):
+        return [metadata]
+    return metadata if isinstance(metadata, list) else []
+
+
+def _metadata_value(fixture: dict[str, Any], terms: set[str]) -> Any:
+    for row in _metadata_items(fixture):
+        label = str(row.get("type") or row.get("name") or row.get("key") or row.get("type_id") or "").lower()
+        if not any(term in label for term in terms):
+            continue
+        if "value" in row:
+            return row.get("value")
+        if "data" in row:
+            return row.get("data")
+    return None
+
+
+def extract_factual_context(
+    fixture: dict[str, Any],
+    home: dict[str, Any],
+    away: dict[str, Any],
+) -> dict[str, Any]:
+    weather = (
+        fixture.get("weatherreport")
+        or fixture.get("weather_report")
+        or _metadata_value(fixture, {"weather", "temperature", "wind", "humidity"})
+    )
+    lineups = fixture.get("lineups") or []
+    sidelined = fixture.get("sidelined") or []
+    coaches = fixture.get("coaches") or []
+    referees = fixture.get("referees") or []
+
+    return {
+        "kickoff": fixture.get("starting_at"),
+        "venue": fixture.get("venue"),
+        "stage": fixture.get("stage"),
+        "round": fixture.get("round"),
+        "weather": weather,
+        "weather_source": "metadata" if weather and not (fixture.get("weatherreport") or fixture.get("weather_report")) else "weather_report",
+        "lineups_available": bool(lineups),
+        "lineup_count": len(lineups) if isinstance(lineups, list) else None,
+        "sidelined_available": bool(sidelined),
+        "sidelined_count": len(sidelined) if isinstance(sidelined, list) else None,
+        "coaches": coaches,
+        "referees": referees,
+        "teams": {
+            "home": {"id": home.get("id"), "name": home.get("name"), "short_code": home.get("short_code")},
+            "away": {"id": away.get("id"), "name": away.get("name"), "short_code": away.get("short_code")},
+        },
+    }
+
+
 def build_sportmonks_features(fixture: dict[str, Any]) -> dict[str, Any]:
     participants = fixture.get("participants") or []
     home = _participant_by_location(participants, "home")
@@ -273,6 +327,7 @@ def build_sportmonks_features(fixture: dict[str, Any]) -> dict[str, Any]:
     prediction_features = extract_prediction_features(fixture.get("predictions") or [], home_code, away_code)
     odds_features = extract_match_odds_features(fixture.get("odds") or [], home_code, away_code)
     xg_features = extract_xg_features(fixture.get("xgfixture") or [], home.get("id"), away.get("id"), home_code, away_code)
+    factual_context = extract_factual_context(fixture, home, away)
 
     data_quality = {
         "participants": "available" if home and away else "missing",
@@ -281,7 +336,10 @@ def build_sportmonks_features(fixture: dict[str, Any]) -> dict[str, Any]:
         "expected_goals": "available" if xg_features else "missing",
         "lineups": "available" if fixture.get("lineups") else "missing",
         "sidelined": "available" if fixture.get("sidelined") else "missing",
-        "weather": "available" if (fixture.get("weatherreport") or fixture.get("weather_report")) else "missing",
+        "weather": "available" if factual_context.get("weather") else "missing",
+        "venue": "available" if factual_context.get("venue") else "missing",
+        "coaches": "available" if factual_context.get("coaches") else "missing",
+        "referees": "available" if factual_context.get("referees") else "missing",
     }
 
     return {
@@ -289,5 +347,6 @@ def build_sportmonks_features(fixture: dict[str, Any]) -> dict[str, Any]:
         "predictions": prediction_features,
         "odds": odds_features,
         "expected_goals": xg_features,
+        "factual_context": factual_context,
         "data_quality": data_quality,
     }

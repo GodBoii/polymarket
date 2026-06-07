@@ -17,6 +17,8 @@ class ArenaDataToolkit(Toolkit):
             tools=[
                 self.get_sportmonks_schedule,
                 self.get_sportmonks_fixture,
+                self.get_sportmonks_head_to_head,
+                self.get_sportmonks_live_standings,
                 self.get_polymarket_mapping,
                 self.get_polymarket_event,
                 self.get_polymarket_midpoint,
@@ -38,7 +40,7 @@ class ArenaDataToolkit(Toolkit):
         url = f"{ARENA_BASE_URL}/api/v1/data/proxy/sportmonks/v3/football/fixtures/{fixture_id}"
         response = requests.get(
             url,
-            params={"include": include or "participants;predictions;odds;xGFixture;venue;weatherReport;lineups;sidelined;coaches;referees;stage;round"},
+            params={"include": include or "participants;league;predictions;odds;xGFixture;venue;metadata;lineups;sidelined;coaches;referees;stage;round"},
             headers=arena_headers(),
             timeout=60,
         )
@@ -49,6 +51,28 @@ class ArenaDataToolkit(Toolkit):
                 headers=arena_headers(),
                 timeout=60,
             )
+        response.raise_for_status()
+        return response.json()
+
+    def get_sportmonks_head_to_head(self, home_team_id: int, away_team_id: int, limit: int = 10) -> dict[str, Any]:
+        """Fetch recent direct meetings between two Sportmonks teams."""
+        response = requests.get(
+            f"{ARENA_BASE_URL}/api/v1/data/proxy/sportmonks/v3/football/fixtures/head-to-head/{home_team_id}/{away_team_id}",
+            params={"include": "participants;scores;league;state", "per_page": str(limit), "order": "desc"},
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_sportmonks_live_standings(self, league_id: int) -> dict[str, Any]:
+        """Fetch live standings for a Sportmonks league when available."""
+        response = requests.get(
+            f"{ARENA_BASE_URL}/api/v1/data/proxy/sportmonks/v3/football/standings/live/leagues/{league_id}",
+            params={"include": "participant;details"},
+            headers=arena_headers(),
+            timeout=30,
+        )
         response.raise_for_status()
         return response.json()
 

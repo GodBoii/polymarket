@@ -103,10 +103,13 @@ def prompt_for_sportmonks_digest(fixture_context: dict[str, Any]) -> str:
 Digest the Sportmonks pre-game data for one fixture.
 
 Prefer the decoded `features` object when it is available. In particular:
-- Use `features.predictions.fulltime_result_probability` for the 1X2 full-time outcome probabilities.
+- Treat `features.predictions.fulltime_result_probability` as a weak baseline signal, not a reliable forecast by itself.
 - Do not treat `FIRST_HALF_WINNER_PROBABILITY` or `TEAM_TO_SCORE_FIRST_PROBABILITY` as full-time win/draw/loss.
 - Use `features.odds.match_result_vig_free_consensus` for bookmaker consensus, because it is filtered to match-result odds and has bookmaker margin removed.
+- Use `features.factual_context` for kickoff time, venue, weather metadata, lineup availability, sidelined players, coaches, referees, stage, and round.
+- Use `enrichment.head_to_head` and `enrichment.live_standings` as supporting context when available.
 - Use raw `prediction_rows` and `match_result_odds_rows` only as audit/detail context.
+- Explicitly flag when Sportmonks ML probabilities are the only non-market football signal available.
 
 Return this schema:
 {{
@@ -121,6 +124,10 @@ Return this schema:
   "probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}},
   "bookmaker_consensus_probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}}|null,
   "expected_goals": {{"HOME_TEAM_CODE": float|null, "AWAY_TEAM_CODE": float|null}}|null,
+  "factual_context_summary": str|null,
+  "head_to_head_summary": str|null,
+  "standings_summary": str|null,
+  "ml_prediction_reliability": "weak_baseline"|"supported"|"not_used",
   "bookmaker_count": int|null,
   "confidence": "low"|"medium"|"high",
   "data_gaps": [str],
@@ -163,6 +170,12 @@ def prompt_for_supabase_digest(history_context: dict[str, Any]) -> str:
     return f"""
 Digest the Supabase historical priors for the two countries.
 
+Prefer the decoded `features` object when it is available. Use raw table rows as audit context.
+The `features` object summarizes arena historical country IDs, style priors, group-stage records,
+knockout patterns, special-match history, and direct H2H row availability.
+Use `statsbomb_open_data` as an optional historical factual fallback when Supabase aggregate rows are missing.
+Never join StatsBomb, Sportmonks, and Supabase by numeric country IDs; StatsBomb is joined only by explicit team-name aliases.
+
 Return this schema:
 {{
   "source": "supabase",
@@ -187,12 +200,20 @@ def prompt_for_prediction(sportmonks_digest: dict[str, Any], supabase_digest: di
     return f"""
 Make an independent football prediction. Do not use Polymarket market prices.
 
+Important modeling rule:
+- Do not rely on Sportmonks ML probabilities as the primary basis for the prediction.
+- Treat Sportmonks ML as a weak baseline/calibration signal only.
+- If expected goals, recent form, lineup/news, H2H, standings, and Supabase historical priors are missing, confidence must be "low" and the rationale must say the prediction is not trade-grade.
+- Do not create high-conviction probabilities from ML output alone.
+
 Return this schema:
 {{
   "fixture": str,
   "outcome": str,
   "probability": float,
   "probabilities": {{"home": float, "draw": float, "away": float}},
+  "evidence_basis": "non_ml_supported"|"mixed"|"ml_primary"|"insufficient",
+  "trade_grade": bool,
   "confidence_level": "low"|"medium"|"high",
   "rationale": str,
   "key_factors": [str],
@@ -224,6 +245,8 @@ Rules:
 - If should_trade=false, direction must be "none", size_usdc must be "0", limit_price must be null, and team_code must be null.
 - If should_trade=true, direction must be "long", team_code must be one of the available outcome codes, size_usdc must be 1.00 to 5.00, and limit_price must be a number.
 - Prefer the provided `best_buy_yes` candidate when it exists, unless you can justify a more conservative no-trade due to low confidence or missing pricing.
+- Read `ml_prediction_risk` carefully. Sportmonks ML probabilities are public, usually weak for home/draw/away prediction, and can manipulate both humans and AI agents into overconfident analysis.
+- Do not let an edge that comes primarily from Sportmonks ML probabilities override missing factual evidence. You may still decide to trade, but the rationale must explicitly explain the factual, non-ML evidence supporting that decision.
 
 Return this schema:
 {{

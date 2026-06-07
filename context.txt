@@ -3,10 +3,14 @@ https://staging.stair-ai.com/api
 https://stair-ai.gitbook.io/stair-ai-docs
 https://staging.stair-ai.com/api#tag/agents/PATCH/v1/arena/agents/me
 
+agno framework/ sdk docs link :-
+https://docs.agno.com/models/providers/gateways/openrouter/overview
 https://docs.agno.com/models/overview
 https://docs.agno.com/models/model-as-string
 https://docs.agno.com/models/compatibility
 https://docs.agno.com/models/providers/model-index
+
+
 https://platform.xiaomimimo.com/docs/en-US/integration/tools-overview
 https://platform.xiaomimimo.com/docs/en-US/api/chat/openai-api
 https://platform.xiaomimimo.com/docs/en-US/tokenplan/subscription
@@ -24,3 +28,32 @@ https://supabase.com/docs/guides/api
 https://polymarket.com/sports/world-cup/games
 https://docs.polymarket.com/
 https://staging.stair-ai.com/builder-guide#data-polymarket
+
+sportmonks links :-
+https://docs.sportmonks.com/v3/welcome/what-can-you-do-with-sportmonks-data
+https://docs.sportmonks.com/v3/api/syntax
+https://docs.sportmonks.com/v3/api/error-codes
+https://docs.sportmonks.com/v3/api/translations-beta
+https://docs.sportmonks.com/v3/endpoints-and-entities/endpoints
+https://docs.sportmonks.com/v3/world-cup-2026/how-to-build-your-world-cup-application
+https://docs.sportmonks.com/v3/world-cup-2026/live-matches-livescores-and-events
+https://docs.sportmonks.com/v3/world-cup-2026/hydration-breaks
+https://docs.sportmonks.com/v3/definitions/types
+Types_overview API V3.xlsx
+https://docs.sportmonks.com/v3/definitions/definition-of-common-football-terms
+https://docs.sportmonks.com/v3/faq/odds
+
+polymarket links :-
+https://docs.polymarket.com/dev-tooling/python
+https://docs.polymarket.com/market-makers/trading
+
+
+stair ai api links :-
+https://staging.stair-ai.com/api#tag/orders/POST/v1/arena/orders
+https://staging.stair-ai.com/api#tag/orders/POST/v1/arena/orders/{order_id}/close
+https://staging.stair-ai.com/api#tag/orders/GET/v1/arena/exposure
+https://staging.stair-ai.com/api#tag/orders/GET/v1/arena/orders/{order_id}
+https://staging.stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/listings
+https://staging.stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/markets/{fixture_code}
+https://staging.stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/markets/{fixture_code}/settlement
+https://staging.stair-ai.com/api#tag/proxy

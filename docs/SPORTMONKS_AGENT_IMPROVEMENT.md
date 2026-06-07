@@ -15,6 +15,12 @@ The backend fetched fixture details with this preferred include string:
 participants;predictions;odds;xGFixture;venue;weatherReport;lineups;sidelined;coaches;referees;stage;round
 ```
 
+The current preferred include has been updated to request Sportmonks v3 `metadata` for weather/factual fixture metadata:
+
+```text
+participants;league;predictions;odds;xGFixture;venue;metadata;lineups;sidelined;coaches;referees;stage;round
+```
+
 If that failed, it fell back to:
 
 ```text
@@ -38,6 +44,7 @@ python-backend/sportmonks_features.py
 ```
 
 The new feature layer converts raw Sportmonks fixture rows into stable model-facing fields.
+It now also exposes `features.factual_context` for kickoff, venue, weather metadata, lineups, sidelined players, coaches, referees, stage, and round.
 
 ### Prediction Features
 
@@ -144,6 +151,19 @@ The Sportmonks digest schema now includes:
 
 - `bookmaker_consensus_probabilities`
 - `expected_goals`
+- `head_to_head_summary`
+- `standings_summary`
+
+## Second Improvement Pass
+
+The pipeline now adds a best-effort `enrichment` block:
+
+- `head_to_head`: fetched from `/fixtures/head-to-head/{team1_id}/{team2_id}`
+- `live_standings`: fetched from `/standings/live/leagues/{league_id}` when the fixture includes a league ID
+
+The primary fixture include now also asks for `league`, so standings can be resolved when Sportmonks returns league metadata.
+
+These enrichment calls are intentionally non-fatal. If the Stair proxy rejects a path or the data is unavailable, the context records an explicit `available: false` plus the error instead of crashing the run.
 
 ## Tests
 
@@ -201,35 +221,32 @@ That should reduce hallucinated or incorrectly weighted signals.
 
 Recommended order:
 
-1. Add Sportmonks H2H fetching:
-   - `/fixtures/head-to-head/{team1_id}/{team2_id}`
-   - last 5 or last 10 direct meetings
-
-2. Add recent form by team:
+1. Add recent form by team:
    - recent fixtures for each team
    - goals for/against
    - xG for/against when available
    - clean sheets
    - quality of opposition if available
 
-3. Add standings/group context:
+2. Add richer standings/group context:
    - group position
    - points
    - goal difference
    - qualification incentive
    - matchday pressure
+   - deterministic extraction from live standings rows
 
-4. Add lineup and availability modeling:
+3. Add lineup and availability modeling:
    - expected/confirmed lineups
    - sidelined players
    - player position
    - approximate starter loss count
 
-5. Add referee and weather features:
+4. Add referee and weather features:
    - referee card/penalty tendency if historical rows are available
    - temperature/wind/rain adjustments
 
-6. Add live/HT mode:
+5. Add live/HT mode:
    - `/livescores/latest`
    - `/livescores/inplay`
    - events
@@ -237,7 +254,7 @@ Recommended order:
    - in-play statistics
    - Supabase `d_*` checkpoint snapshots
 
-7. Add richer odds handling:
+6. Add richer odds handling:
    - compare Sportmonks bookmaker consensus to Polymarket midpoint
    - track stale odds through `latest_bookmaker_update`
    - separate market families: 1X2, double chance, totals, BTTS, handicap

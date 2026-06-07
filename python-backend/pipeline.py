@@ -105,7 +105,7 @@ def normalize_prediction(prediction: dict[str, Any]) -> dict[str, Any]:
     return prediction
 
 
-def normalize_strategy(strategy: dict[str, Any]) -> dict[str, Any]:
+def normalize_strategy(strategy: dict[str, Any], strategy_context: dict[str, Any] | None = None) -> dict[str, Any]:
     if not strategy.get("should_trade"):
         strategy["should_trade"] = False
         strategy["team_code"] = None
@@ -143,6 +143,42 @@ def build_sportmonks_context(fixture_envelope: dict[str, Any]) -> dict[str, Any]
         "stage": fixture.get("stage"),
         "round": fixture.get("round"),
     }
+
+
+def _sportmonks_enrichment(data: ArenaDataToolkit, fixture: dict[str, Any]) -> dict[str, Any]:
+    raw = fixture.get("raw") or {}
+    home = fixture.get("home") or {}
+    away = fixture.get("away") or {}
+    enrichment: dict[str, Any] = {}
+
+    if home.get("id") and away.get("id"):
+        try:
+            h2h = data.get_sportmonks_head_to_head(int(home["id"]), int(away["id"]))
+            h2h_rows = h2h.get("body", {}).get("data", h2h.get("data", []))
+            enrichment["head_to_head"] = {
+                "available": True,
+                "fixture_count": len(h2h_rows or []),
+                "fixtures": (h2h_rows or [])[:10],
+            }
+        except Exception as exc:
+            enrichment["head_to_head"] = {"available": False, "error": f"{type(exc).__name__}: {exc}"}
+
+    league = raw.get("league") or {}
+    league_id = league.get("id") or raw.get("league_id")
+    if league_id:
+        try:
+            standings = data.get_sportmonks_live_standings(int(league_id))
+            standings_rows = standings.get("body", {}).get("data", standings.get("data", []))
+            enrichment["live_standings"] = {
+                "available": True,
+                "league_id": league_id,
+                "row_count": len(standings_rows or []),
+                "rows": (standings_rows or [])[:30],
+            }
+        except Exception as exc:
+            enrichment["live_standings"] = {"available": False, "league_id": league_id, "error": f"{type(exc).__name__}: {exc}"}
+
+    return enrichment
 
 
 def build_polymarket_context(data: ArenaDataToolkit, fixture_id: int, fixture_code: str) -> dict[str, Any]:
@@ -327,6 +363,7 @@ def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink
     emit(event_sink, "tool_result", "sportmonks_fetch", {"fixture": fixture.get("name"), "fixture_id": fixture_id})
 
     sportmonks_context = build_sportmonks_context(fixture_envelope)
+    sportmonks_context["enrichment"] = _sportmonks_enrichment(data, fixture)
     sportmonks_digest = run_agent_json(sportmonks_agent(db, session_id), prompt_for_sportmonks_digest(compact_json(sportmonks_context, limit=26000)), "sportmonks_agent", event_sink)
     sportmonks_digest = normalize_sportmonks_digest(sportmonks_digest)
     ledger.thinking(prompt="SportMonks digest", description="SportMonks digest.", output_payload=sportmonks_digest)
@@ -361,7 +398,7 @@ def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink
 
     strategy_context = build_strategy_context(prediction, polymarket_digest)
     strategy = run_agent_json(strategy_agent(db, session_id), prompt_for_strategy(strategy_context), "strategy_agent", event_sink)
-    strategy = normalize_strategy(strategy)
+    strategy = normalize_strategy(strategy, strategy_context)
     ledger.thinking(prompt="Strategy decision", description="Strategy decision.", output_payload=strategy)
     emit(event_sink, "ledger_record", "ledger", ledger.records[-1])
 

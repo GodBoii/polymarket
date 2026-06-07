@@ -3,6 +3,36 @@ from typing import Any
 from scout import clamp_probability, edge_pp
 
 
+def describe_ml_prediction_risk(prediction: dict[str, Any]) -> dict[str, Any]:
+    text_parts = [
+        str(prediction.get("rationale") or ""),
+        " ".join(str(item) for item in prediction.get("key_factors") or []),
+        " ".join(str(item) for item in prediction.get("data_gaps") or []),
+    ]
+    text = " ".join(text_parts).lower()
+    data_gaps = [str(item).lower() for item in prediction.get("data_gaps") or []]
+
+    ml_terms = ["sportmonks model", "model probability", "ml", "fulltime result probability", "prediction model"]
+    core_gap_terms = ["expected", "xg", "head-to-head", "h2h", "standings", "historical", "lineup", "weather", "form"]
+    sportmonks_ml_dependent = any(term in text for term in ml_terms)
+    missing_core_context = sum(1 for gap in data_gaps if any(term in gap for term in core_gap_terms))
+
+    if sportmonks_ml_dependent and missing_core_context >= 3:
+        return {
+            "level": "weak_ml_primary",
+            "advisory": "Prediction appears primarily driven by Sportmonks ML probabilities while core non-ML context is missing. Treat the edge as unreliable unless the agent can cite stronger factual evidence.",
+        }
+    if sportmonks_ml_dependent:
+        return {
+            "level": "ml_present",
+            "advisory": "Sportmonks ML probabilities are present. They are public, easy to overfit to, and should be used only as weak calibration beside factual football evidence.",
+        }
+    return {
+        "level": "not_ml_primary",
+        "advisory": "Prediction is not primarily described as Sportmonks-ML driven.",
+    }
+
+
 def build_strategy_context(prediction: dict[str, Any], polymarket_digest: dict[str, Any]) -> dict[str, Any]:
     implied = polymarket_digest.get("implied_probabilities") if isinstance(polymarket_digest, dict) else None
     prediction_probs = prediction.get("probabilities") if isinstance(prediction, dict) else None
@@ -40,12 +70,15 @@ def build_strategy_context(prediction: dict[str, Any], polymarket_digest: dict[s
 
     positive_edges = [row for row in edge_table if row.get("edge_pp") is not None and row["edge_pp"] >= 5]
     best_buy_yes = max(positive_edges, key=lambda row: row["edge_pp"], default=None)
+    ml_prediction_risk = describe_ml_prediction_risk(prediction)
+
     return {
         "prediction": prediction,
         "polymarket_digest": polymarket_digest,
         "outcome_mapping": outcome_map,
         "edge_table": edge_table,
         "best_buy_yes": best_buy_yes,
+        "ml_prediction_risk": ml_prediction_risk,
         "order_capability": "Stair arena orders submit buy-YES by fixture_code/team_code. To fade an overpriced outcome, buy YES on the underpriced alternative with the best positive edge.",
     }
 

@@ -72,6 +72,13 @@ In this example, the best positive-edge executable candidate is:
 
 The agent may still choose no trade because of low confidence or missing data, but it should not skip solely because Mexico is overvalued.
 
+After the later run `prematch:19609127:20260607T074553Z`, this policy was tightened further:
+
+- all-outcome edge selection is still correct
+- Sportmonks ML-only edges are now flagged as unreliable advisory context
+- the pipeline does not hard-code a no-trade override; the Strategy Agent must explain whether factual non-ML evidence is strong enough
+- see `docs/ML_PREDICTION_RISK_POLICY.md`
+
 ## Implemented Change
 
 Added:
@@ -85,6 +92,7 @@ This module builds a deterministic strategy context with:
 - `outcome_mapping`
 - `edge_table`
 - `best_buy_yes`
+- `ml_prediction_risk`
 - `order_capability`
 
 The strategy prompt now receives this context and is instructed to:
@@ -93,6 +101,7 @@ The strategy prompt now receives this context and is instructed to:
 - buy YES only on positive-edge outcomes
 - express fades through underpriced alternatives when possible
 - discuss short/fade logic in rationale, but submit executable orders as `direction="long"` with a valid `team_code`
+- treat public Sportmonks ML probabilities as weak calibration, not as standalone trade evidence
 
 ## Tests
 
@@ -131,3 +140,5 @@ If Stair adds explicit side/NO-token support to the arena order API, ORACLE shou
 - true short/fade execution
 
 Until then, the safest executable behavior is to buy YES on the underpriced outcome with the best positive edge.
+
+This only applies when the prediction is trade-grade. Model-only or ML-primary edges are flagged to the Strategy Agent through `ml_prediction_risk`, and the agent must justify any trade with factual non-ML evidence.

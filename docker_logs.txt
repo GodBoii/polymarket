@@ -1,0 +1,1451 @@
+2026-06-07 17:34:44.427 | INFO:     Started server process [1]
+2026-06-07 17:34:44.427 | INFO:     Waiting for application startup.
+2026-06-07 17:34:44.428 | INFO:     Application startup complete.
+2026-06-07 17:34:44.429 | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-06-07 17:35:08.459 | INFO:     172.20.0.1:33994 - "WebSocket /ws/runs" [accepted]
+2026-06-07 17:35:08.461 | INFO:     connection open
+2026-06-07 17:36:31.232 | DEBUG **************** Agent ID: fixture-selector ****************              
+2026-06-07 17:36:31.233 | DEBUG Reading AgentSession: prematch:19609127:20260607T120628Z                  
+2026-06-07 17:36:31.257 | DEBUG Creating new AgentSession: prematch:19609127:20260607T120628Z             
+2026-06-07 17:36:31.262 | DEBUG ** Agent Run Start: 5aec3590-97d3-4105-bcf4-e0318d2518f6 ***              
+2026-06-07 17:36:31.267 | DEBUG -------------- OpenRouter Chat Response Start --------------              
+2026-06-07 17:36:31.268 | DEBUG ------------ Model: deepseek/deepseek-v4-flash -------------              
+2026-06-07 17:36:31.269 | DEBUG ========================== system ==========================              
+2026-06-07 17:36:31.271 | DEBUG Select and normalize the target football fixture identity for downstream  
+2026-06-07 17:36:31.271 |       agents.                                                                   
+2026-06-07 17:36:31.271 |       - Return only valid JSON.                                                 
+2026-06-07 17:36:31.271 |       - Do not wrap the JSON in markdown fences.                                
+2026-06-07 17:36:31.271 |       - Use null when a value is unavailable.                                   
+2026-06-07 17:36:31.271 |       - Be explicit about data gaps and confidence.                             
+2026-06-07 17:36:31.272 | DEBUG =========================== user ===========================              
+2026-06-07 17:36:31.276 | DEBUG                                                                           
+2026-06-07 17:36:31.276 |       Select the target fixture and return this schema:                         
+2026-06-07 17:36:31.276 |       {                                                                         
+2026-06-07 17:36:31.276 |         "fixture_id": int,                                                      
+2026-06-07 17:36:31.276 |         "fixture_code": str,                                                    
+2026-06-07 17:36:31.276 |         "selection_reason": str,                                                
+2026-06-07 17:36:31.276 |         "schedule_entries_seen": int                                            
+2026-06-07 17:36:31.276 |       }                                                                         
+2026-06-07 17:36:31.276 |                                                                                 
+2026-06-07 17:36:31.276 |       Target fixture id: 19609127                                               
+2026-06-07 17:36:31.276 |       Schedule summary: {'mode': 'auto', 'scout_selected': {'fixture_id':       
+2026-06-07 17:36:31.276 |       19609127, 'fixture_code': '19609127', 'name': 'Mexico vs South Africa',   
+2026-06-07 17:36:31.276 |       'starting_at': '2026-06-11 19:00:00', 'stage': 'Group Stage', 'round':    
+2026-06-07 17:36:31.276 |       '1', 'has_named_participants': True, 'score': 116.58, 'hours_until':      
+2026-06-07 17:36:31.276 |       102.91, 'mapping_count': 1, 'market_count': 3, 'midpoint_count': 3,       
+2026-06-07 17:36:31.276 |       'prediction_count': 28, 'odds_count': 2350, 'score_reasons': ['named      
+2026-06-07 17:36:31.276 |       teams', 'kickoff in 102.9h', 'Polymarket mapping', '3 markets', '3        
+2026-06-07 17:36:31.276 |       prices', '28 SportMonks predictions', '2350 odds rows']}}                 
+2026-06-07 17:36:31.276 |                                                                                 
+2026-06-07 17:36:31.281 | DEBUG Creating new sync OpenAI client for model deepseek/deepseek-v4-flash      
+2026-06-07 17:36:37.001 | DEBUG ======================== assistant =========================              
+2026-06-07 17:36:37.005 | DEBUG <reasoning>                                                               
+2026-06-07 17:36:37.005 |       We need to output the JSON for the selected fixture. The target fixture id
+2026-06-07 17:36:37.005 |       is 19609127, and the schedule summary provides details. The fixture_code  
+2026-06-07 17:36:37.005 |       is given as '19609127'. selection_reason should explain why this was      
+2026-06-07 17:36:37.005 |       chosen. The schedule summary says mode is 'auto' and scout_selected shows 
+2026-06-07 17:36:37.005 |       the fixture details. We can use that to formulate a reason.               
+2026-06-07 17:36:37.005 |       schedule_entries_seen: The summary doesn't explicitly state how many      
+2026-06-07 17:36:37.005 |       entries were seen, but it's from a schedule summary. Possibly we infer 1  
+2026-06-07 17:36:37.005 |       because it's the selected one? But it says 'scout_selected' which implies 
+2026-06-07 17:36:37.005 |       it's the chosen one. Likely the schedule entries seen is 1 because the    
+2026-06-07 17:36:37.005 |       target was specified. However, to be accurate, we can note that the       
+2026-06-07 17:36:37.005 |       schedule summary was provided for this specific fixture. Since the user   
+2026-06-07 17:36:37.005 |       explicitly gave the target id, we can set schedule_entries_seen to 1 as we
+2026-06-07 17:36:37.005 |       have one entry. But the instruction says "schedule_entries_seen" - number 
+2026-06-07 17:36:37.005 |       of schedule entries considered. Since only one is provided, it's 1.       
+2026-06-07 17:36:37.005 |       selection_reason: "Target fixture ID explicitly provided; fixture has     
+2026-06-07 17:36:37.005 |       named teams, multiple markets, predictions, and odds." We'll keep it      
+2026-06-07 17:36:37.005 |       concise.                                                                  
+2026-06-07 17:36:37.005 |                                                                                 
+2026-06-07 17:36:37.005 |       Return only JSON, no markdown.                                            
+2026-06-07 17:36:37.005 |       </reasoning>                                                              
+2026-06-07 17:36:37.007 | DEBUG {                                                                         
+2026-06-07 17:36:37.007 |         "fixture_id": 19609127,                                                 
+2026-06-07 17:36:37.007 |         "fixture_code": "19609127",                                             
+2026-06-07 17:36:37.007 |         "selection_reason": "Target fixture ID explicitly provided; fixture has 
+2026-06-07 17:36:37.007 |       named teams (Mexico vs South Africa), multiple markets (3), predictions   
+2026-06-07 17:36:37.007 |       (28), and odds (2350 rows) with a concentration score of 116.58.",        
+2026-06-07 17:36:37.007 |         "schedule_entries_seen": 1                                              
+2026-06-07 17:36:37.007 |       }                                                                         
+2026-06-07 17:36:37.008 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:36:37.009 | DEBUG * Tokens:                      input=314, output=347, total=661,          
+2026-06-07 17:36:37.009 |       reasoning=260                                                             
+2026-06-07 17:36:37.010 | DEBUG * Duration:                    5.7201s                                    
+2026-06-07 17:36:37.011 | DEBUG * Tokens per second:           60.6631 tokens/s                           
+2026-06-07 17:36:37.012 | DEBUG * Time to first token:         5.7201s                                    
+2026-06-07 17:36:37.013 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:36:37.013 | DEBUG --------------- OpenRouter Chat Response End ---------------              
+2026-06-07 17:36:37.014 | DEBUG Added RunOutput to Agent Session                                          
+2026-06-07 17:36:37.080 | DEBUG Created or updated AgentSession record: prematch:19609127:20260607T120628Z
+2026-06-07 17:36:37.081 | DEBUG *** Agent Run End: 5aec3590-97d3-4105-bcf4-e0318d2518f6 ****              
+2026-06-07 17:36:50.547 | DEBUG ****** Session ID: prematch:19609127:20260607T120628Z ******              
+2026-06-07 17:36:50.548 | DEBUG *********** Agent ID: sportmonks-research-agent ************              
+2026-06-07 17:36:50.549 | DEBUG Reading AgentSession: prematch:19609127:20260607T120628Z                  
+2026-06-07 17:36:50.566 | DEBUG ** Agent Run Start: f0895568-41b1-4b2d-ad02-2b8d518634a7 ***              
+2026-06-07 17:36:50.567 | DEBUG -------------- OpenRouter Chat Response Start --------------              
+2026-06-07 17:36:50.568 | DEBUG ------------ Model: deepseek/deepseek-v4-flash -------------              
+2026-06-07 17:36:50.570 | DEBUG ========================== system ==========================              
+2026-06-07 17:36:50.571 | DEBUG Digest Sportmonks football data into pre-game signals without looking at  
+2026-06-07 17:36:50.571 |       market prices.                                                            
+2026-06-07 17:36:50.571 |       - Return only valid JSON.                                                 
+2026-06-07 17:36:50.571 |       - Do not wrap the JSON in markdown fences.                                
+2026-06-07 17:36:50.571 |       - Use null when a value is unavailable.                                   
+2026-06-07 17:36:50.571 |       - Be explicit about data gaps and confidence.                             
+2026-06-07 17:36:50.572 | DEBUG =========================== user ===========================              
+2026-06-07 17:36:50.651 | DEBUG                                                                           
+2026-06-07 17:36:50.651 |       Digest the Sportmonks pre-game data for one fixture.                      
+2026-06-07 17:36:50.651 |                                                                                 
+2026-06-07 17:36:50.651 |       Prefer the decoded `features` object when it is available. In particular: 
+2026-06-07 17:36:50.651 |       - Treat `features.predictions.fulltime_result_probability` as a weak      
+2026-06-07 17:36:50.651 |       baseline signal, not a reliable forecast by itself.                       
+2026-06-07 17:36:50.651 |       - Do not treat `FIRST_HALF_WINNER_PROBABILITY` or                         
+2026-06-07 17:36:50.651 |       `TEAM_TO_SCORE_FIRST_PROBABILITY` as full-time win/draw/loss.             
+2026-06-07 17:36:50.651 |       - Use `features.odds.match_result_vig_free_consensus` for bookmaker       
+2026-06-07 17:36:50.651 |       consensus, because it is filtered to match-result odds and has bookmaker  
+2026-06-07 17:36:50.651 |       margin removed.                                                           
+2026-06-07 17:36:50.651 |       - Use `features.factual_context` for kickoff time, venue, weather         
+2026-06-07 17:36:50.651 |       metadata, lineup availability, sidelined players, coaches, referees,      
+2026-06-07 17:36:50.651 |       stage, and round.                                                         
+2026-06-07 17:36:50.651 |       - Use `enrichment.head_to_head` and `enrichment.live_standings` as        
+2026-06-07 17:36:50.651 |       supporting context when available.                                        
+2026-06-07 17:36:50.651 |       - Use raw `prediction_rows` and `match_result_odds_rows` only as          
+2026-06-07 17:36:50.651 |       audit/detail context.                                                     
+2026-06-07 17:36:50.651 |       - Explicitly flag when Sportmonks ML probabilities are the only non-market
+2026-06-07 17:36:50.651 |       football signal available.                                                
+2026-06-07 17:36:50.651 |                                                                                 
+2026-06-07 17:36:50.651 |       Return this schema:                                                       
+2026-06-07 17:36:50.651 |       {                                                                         
+2026-06-07 17:36:50.651 |         "source": "sportmonks",                                                 
+2026-06-07 17:36:50.651 |         "fixture": str,                                                         
+2026-06-07 17:36:50.651 |         "fixture_id": int,                                                      
+2026-06-07 17:36:50.651 |         "home_team": str,                                                       
+2026-06-07 17:36:50.651 |         "away_team": str,                                                       
+2026-06-07 17:36:50.651 |         "home_code": str,                                                       
+2026-06-07 17:36:50.651 |         "away_code": str,                                                       
+2026-06-07 17:36:50.651 |         "available_signals": [str],                                             
+2026-06-07 17:36:50.651 |         "probabilities": {"HOME_TEAM_CODE": float|null, "draw": float|null,     
+2026-06-07 17:36:50.651 |       "AWAY_TEAM_CODE": float|null},                                            
+2026-06-07 17:36:50.652 |         "bookmaker_consensus_probabilities": {"HOME_TEAM_CODE": float|null,     
+2026-06-07 17:36:50.652 |       "draw": float|null, "AWAY_TEAM_CODE": float|null}|null,                   
+2026-06-07 17:36:50.652 |         "expected_goals": {"HOME_TEAM_CODE": float|null, "AWAY_TEAM_CODE":      
+2026-06-07 17:36:50.652 |       float|null}|null,                                                         
+2026-06-07 17:36:50.652 |         "factual_context_summary": str|null,                                    
+2026-06-07 17:36:50.652 |         "head_to_head_summary": str|null,                                       
+2026-06-07 17:36:50.652 |         "standings_summary": str|null,                                          
+2026-06-07 17:36:50.652 |         "ml_prediction_reliability": "weak_baseline"|"supported"|"not_used",    
+2026-06-07 17:36:50.652 |         "bookmaker_count": int|null,                                            
+2026-06-07 17:36:50.652 |         "confidence": "low"|"medium"|"high",                                    
+2026-06-07 17:36:50.652 |         "data_gaps": [str],                                                     
+2026-06-07 17:36:50.652 |         "summary": str                                                          
+2026-06-07 17:36:50.652 |       }                                                                         
+2026-06-07 17:36:50.652 |                                                                                 
+2026-06-07 17:36:50.652 |       Probability values must be decimals from 0 to 1, not percentages.         
+2026-06-07 17:36:50.652 |       Use the actual team short codes as probability keys. Do not use           
+2026-06-07 17:36:50.652 |       placeholder keys like HOME_CODE, HOME_TEAM_CODE, AWAY_CODE, or            
+2026-06-07 17:36:50.652 |       AWAY_TEAM_CODE.                                                           
+2026-06-07 17:36:50.652 |                                                                                 
+2026-06-07 17:36:50.652 |       Context:                                                                  
+2026-06-07 17:36:50.652 |       {"fixture": "Mexico vs South Africa", "fixture_id": 19609127,             
+2026-06-07 17:36:50.652 |       "starting_at": "2026-06-11 19:00:00", "home": {"name": "Mexico",          
+2026-06-07 17:36:50.652 |       "short_code": "MEX", "id": 18576, "country_id": 458}, "away": {"name":    
+2026-06-07 17:36:50.652 |       "South Africa", "short_code": "ZAF", "id": 18555, "country_id": 146},     
+2026-06-07 17:36:50.652 |       "features": {"participant_codes": {"home": "MEX", "away": "ZAF"},         
+2026-06-07 17:36:50.652 |       "predictions": {"prediction_type_count": 28, "prediction_types_seen":     
+2026-06-07 17:36:50.652 |       ["AWAY_OVER_UNDER_0_5_PROBABILITY", "AWAY_OVER_UNDER_1_5_PROBABILITY",    
+2026-06-07 17:36:50.652 |       "AWAY_OVER_UNDER_2_5_PROBABILITY", "AWAY_OVER_UNDER_3_5_PROBABILITY",     
+2026-06-07 17:36:50.652 |       "BTTS_PROBABILITY", "CORNERS_OVER_UNDER_10_5_PROBABILITY",                
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_10_PROBABILITY", "CORNERS_OVER_UNDER_11_PROBABILITY", 
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_4_PROBABILITY", "CORNERS_OVER_UNDER_5_PROBABILITY",   
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_6_PROBABILITY", "CORNERS_OVER_UNDER_7_PROBABILITY",   
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_8_PROBABILITY", "CORNERS_OVER_UNDER_9_PROBABILITY",   
+2026-06-07 17:36:50.652 |       "CORRECT_SCORE_PROBABILITY", "DOUBLE_CHANCE_PROBABILITY",                 
+2026-06-07 17:36:50.652 |       "FIRST_HALF_WINNER_PROBABILITY", "FULLTIME_RESULT_PROBABILITY",           
+2026-06-07 17:36:50.652 |       "HOME_OVER_UNDER_0_5_PROBABILITY", "HOME_OVER_UNDER_1_5_PROBABILITY",     
+2026-06-07 17:36:50.652 |       "HOME_OVER_UNDER_2_5_PROBABILITY", "HOME_OVER_UNDER_3_5_PROBABILITY",     
+2026-06-07 17:36:50.652 |       "HTFT_PROBABILITY", "OVER_UNDER_1_5_PROBABILITY",                         
+2026-06-07 17:36:50.652 |       "OVER_UNDER_2_5_PROBABILITY", "OVER_UNDER_3_5_PROBABILITY",               
+2026-06-07 17:36:50.652 |       "OVER_UNDER_4_5_PROBABILITY", "TEAM_TO_SCORE_FIRST_PROBABILITY"],         
+2026-06-07 17:36:50.652 |       "fulltime_result_probability": {"MEX": 0.4081, "draw": 0.2769, "ZAF":     
+2026-06-07 17:36:50.652 |       0.315}, "btts_probability": {"yes": 0.4702, "no": 0.5298},                
+2026-06-07 17:36:50.652 |       "over_under_2_5_probability": {"yes": 0.429, "no": 0.571},                
+2026-06-07 17:36:50.652 |       "double_chance_probability": {"draw_home": 0.685, "draw_away": 0.5919,    
+2026-06-07 17:36:50.652 |       "home_away": 0.7231}, "team_to_score_first_probability": {"home": 0.5034, 
+2026-06-07 17:36:50.652 |       "away": 0.4027, "draw": 0.0939}, "correct_score_top": [{"score": "3-3",   
+2026-06-07 17:36:50.652 |       "probability": 0.69}, {"score": "1-1", "probability": 0.1315}, {"score":  
+2026-06-07 17:36:50.652 |       "1-0", "probability": 0.1208}, {"score": "0-1", "probability": 0.098},    
+2026-06-07 17:36:50.652 |       {"score": "0-0", "probability": 0.0939}], "model_quality":                
+2026-06-07 17:36:50.652 |       {"historical_log_loss": null, "model_hit_ratio": null,                    
+2026-06-07 17:36:50.652 |       "model_predictability": null, "model_predictive_power": null,             
+2026-06-07 17:36:50.652 |       "models_log_loss": null}, "typed_prediction_rows": [{"type_id": 235,      
+2026-06-07 17:36:50.652 |       "type": "OVER_UNDER_2_5_PROBABILITY", "predictions": {"yes": 42.9, "no":  
+2026-06-07 17:36:50.652 |       57.1}}, {"type_id": 327, "type": "AWAY_OVER_UNDER_3_5_PROBABILITY",       
+2026-06-07 17:36:50.652 |       "predictions": {"yes": 2.82, "no": 97.18}}, {"type_id": 326, "type":      
+2026-06-07 17:36:50.652 |       "HOME_OVER_UNDER_3_5_PROBABILITY", "predictions": {"yes": 4.16, "no":     
+2026-06-07 17:36:50.652 |       95.84}}, {"type_id": 332, "type": "AWAY_OVER_UNDER_1_5_PROBABILITY",      
+2026-06-07 17:36:50.652 |       "predictions": {"yes": 28.77, "no": 71.23}}, {"type_id": 231, "type":     
+2026-06-07 17:36:50.652 |       "BTTS_PROBABILITY", "predictions": {"yes": 47.02, "no": 52.98}},          
+2026-06-07 17:36:50.652 |       {"type_id": 240, "type": "CORRECT_SCORE_PROBABILITY", "predictions":      
+2026-06-07 17:36:50.652 |       {"scores": {"0-0": 9.39, "0-1": 9.8, "0-2": 5.13, "0-3": 2.36, "1-0":     
+2026-06-07 17:36:50.652 |       12.08, "1-1": 13.15, "1-2": 7.04, "1-3": 2.63, "2-0": 7.56, "2-1": 8.47,  
+2026-06-07 17:36:50.652 |       "2-2": 4.38, "2-3": 1.81, "3-0": 3.28, "3-1": 3.43, "3-2": 1.91, "3-3":   
+2026-06-07 17:36:50.652 |       0.69, "Other_1": 4.08, "Other_2": 2.74, "Other_X": 0.08}}}, {"type_id":   
+2026-06-07 17:36:50.652 |       331, "type": "HOME_OVER_UNDER_1_5_PROBABILITY", "predictions": {"yes":    
+2026-06-07 17:36:50.652 |       35.69, "no": 64.31}}, {"type_id": 330, "type":                            
+2026-06-07 17:36:50.652 |       "HOME_OVER_UNDER_2_5_PROBABILITY", "predictions": {"yes": 13.47, "no":    
+2026-06-07 17:36:50.652 |       86.53}}, {"type_id": 333, "type": "AWAY_OVER_UNDER_0_5_PROBABILITY",      
+2026-06-07 17:36:50.652 |       "predictions": {"yes": 63.62, "no": 36.38}}, {"type_id": 1683, "type":    
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_5_PROBABILITY", "predictions": {"yes": 71.63, "no":   
+2026-06-07 17:36:50.652 |       18.54, "equal": 9.83}}, {"type_id": 234, "type":                          
+2026-06-07 17:36:50.652 |       "OVER_UNDER_1_5_PROBABILITY", "predictions": {"yes": 68.74, "no": 31.26}},
+2026-06-07 17:36:50.652 |       {"type_id": 1679, "type": "OVER_UNDER_4_5_PROBABILITY", "predictions":    
+2026-06-07 17:36:50.652 |       {"yes": 11.31, "no": 88.69}}, {"type_id": 1685, "type":                   
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_6_PROBABILITY", "predictions": {"yes": 60.32, "no":   
+2026-06-07 17:36:50.652 |       28.38, "equal": 11.31}}, {"type_id": 1684, "type":                        
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_11_PROBABILITY", "predictions": {"yes": 14.16, "no":  
+2026-06-07 17:36:50.652 |       79.97, "equal": 5.86}}, {"type_id": 233, "type":                          
+2026-06-07 17:36:50.652 |       "FIRST_HALF_WINNER_PROBABILITY", "predictions": {"home": 28.8, "away":    
+2026-06-07 17:36:50.652 |       25.28, "draw": 45.92}}, {"type_id": 237, "type":                          
+2026-06-07 17:36:50.652 |       "FULLTIME_RESULT_PROBABILITY", "predictions": {"home": 40.81, "away":     
+2026-06-07 17:36:50.652 |       31.5, "draw": 27.69}}, {"type_id": 238, "type":                           
+2026-06-07 17:36:50.652 |       "TEAM_TO_SCORE_FIRST_PROBABILITY", "predictions": {"home": 50.34, "away": 
+2026-06-07 17:36:50.652 |       40.27, "draw": 9.39}}, {"type_id": 239, "type":                           
+2026-06-07 17:36:50.652 |       "DOUBLE_CHANCE_PROBABILITY", "predictions": {"draw_home": 68.5,           
+2026-06-07 17:36:50.652 |       "draw_away": 59.19, "home_away": 72.31}}, {"type_id": 1690, "type":       
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_4_PROBABILITY", "predictions": {"yes": 81.46, "no":   
+2026-06-07 17:36:50.652 |       10.85, "equal": 7.7}}, {"type_id": 1686, "type":                          
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_7_PROBABILITY", "predictions": {"yes": 48.56, "no":   
+2026-06-07 17:36:50.652 |       39.68, "equal": 11.76}}, {"type_id": 1689, "type":                        
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_8_PROBABILITY", "predictions": {"yes": 37.44, "no":   
+2026-06-07 17:36:50.652 |       51.44, "equal": 11.12}}, {"type_id": 1687, "type":                        
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_9_PROBABILITY", "predictions": {"yes": 27.79, "no":   
+2026-06-07 17:36:50.652 |       62.56, "equal": 9.65}}, {"type_id": 1688, "type":                         
+2026-06-07 17:36:50.652 |       "CORNERS_OVER_UNDER_10_PROBABILITY", "predictions": {"yes": 20.03, "no":  
+2026-06-07 17:36:50.652 |       72.21, "equal": 7.76}}, {"type_id": 232, "type": "HTFT_PROBABILITY",      
+2026-06-07 17:36:50.652 |       "predictions": {"home_home": 20.75, "home_away": 2.52, "home_draw": 5.3,  
+2026-06-07 17:36:50.652 |       "away_home": 2.12, "away_away": 17.92, "away_draw": 5.04, "draw_draw":    
+2026-06-07 17:36:50.652 |       17.58, "draw_home": 16.45, "draw_away": 12.32}}, {"type_id": 236, "type": 
+2026-06-07 17:36:50.652 |       "OVER_UNDER_3_5_PROBABILITY", "predictions": {"yes": 21.74, "no": 78.26}},
+2026-06-07 17:36:50.652 |       {"type_id": 334, "type": "HOME_OVER_UNDER_0_5_PROBABILITY", "predictions":
+2026-06-07 17:36:50.652 |       {"yes": 70.59, "no": 29.41}}, {"type_id": 328, "type":                    
+2026-06-07 17:36:50.652 |       "AWAY_OVER_UNDER_2_5_PROBABILITY", "predictions": {"yes": 10.31, "no":    
+2026-06-07 17:36:50.652 |       89.69}}, {"type_id": 1585, "type": "CORNERS_OVER_UNDER_10_5_PROBABILITY", 
+2026-06-07 17:36:50.652 |       "predictions": {"yes": 20.03, "no": 79.97, "equal": null}}]}, "odds":     
+2026-06-07 17:36:50.652 |       {"match_result_rows": [{"bookmaker_id": 2, "market_id": 1, "label":       
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.33", "probability": 0.2308, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:01:22"}, {"bookmaker_id": 58, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "8.20", "probability": 0.122, "latest_bookmaker_update": 
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:24"}, {"bookmaker_id": 34, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.41", "probability": 0.7092, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:43:09"}, {"bookmaker_id": 29, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "7.50", "probability": 0.1333, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:57:37"}, {"bookmaker_id": 29, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.40", "probability": 0.7143, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:57:37"}, {"bookmaker_id": 58, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.42", "probability": 0.7042, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:24"}, {"bookmaker_id": 34, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "8.40", "probability": 0.119, "latest_bookmaker_update": 
+2026-06-07 17:36:50.652 |       "2026-06-07 11:43:09"}, {"bookmaker_id": 32, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.44", "probability": 0.6944, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:58:48"}, {"bookmaker_id": 32, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.33", "probability": 0.2309, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:58:48"}, {"bookmaker_id": 34, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.26", "probability": 0.2347, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:43:09"}, {"bookmaker_id": 13, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.33", "probability": 0.2309, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:29"}, {"bookmaker_id": 13, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "7.50", "probability": 0.1333, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:29"}, {"bookmaker_id": 66, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.10", "probability": 0.2439, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:23"}, {"bookmaker_id": 66, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "7.30", "probability": 0.137, "latest_bookmaker_update": 
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:23"}, {"bookmaker_id": 27, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.50", "probability": 0.6667, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-05-26 20:20:00"}, {"bookmaker_id": 27, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.30", "probability": 0.2326, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-05-26 20:20:00"}, {"bookmaker_id": 27, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "6.75", "probability": 0.1481, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-05-26 20:20:00"}, {"bookmaker_id": 35, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.45", "probability": 0.6897, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:56:01"}, {"bookmaker_id": 35, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.50", "probability": 0.2222, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:56:01"}, {"bookmaker_id": 35, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "8.60", "probability": 0.1163, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:56:01"}, {"bookmaker_id": 58, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.35", "probability": 0.2299, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:24"}, {"bookmaker_id": 64, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.41", "probability": 0.7062, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:20"}, {"bookmaker_id": 64, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.38", "probability": 0.2283, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:20"}, {"bookmaker_id": 64, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "8.40", "probability": 0.119, "latest_bookmaker_update": 
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:20"}, {"bookmaker_id": 13, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.44", "probability": 0.6944, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:29"}, {"bookmaker_id": 29, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.00", "probability": 0.25, "latest_bookmaker_update":  
+2026-06-07 17:36:50.652 |       "2026-06-07 11:57:37"}, {"bookmaker_id": 20, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.42", "probability": 0.7008, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:44"}, {"bookmaker_id": 20, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.55", "probability": 0.2198, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:44"}, {"bookmaker_id": 20, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "8.49", "probability": 0.1178, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:44"}, {"bookmaker_id": 28, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.44", "probability": 0.6944, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:15"}, {"bookmaker_id": 28, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.33", "probability": 0.2309, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:15"}, {"bookmaker_id": 28, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "7.75", "probability": 0.129, "latest_bookmaker_update": 
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:15"}, {"bookmaker_id": 9, "market_id": 1, "label":      
+2026-06-07 17:36:50.652 |       "Home", "value": "1.36", "probability": 0.7353, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:45"}, {"bookmaker_id": 9, "market_id": 1, "label":      
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.50", "probability": 0.2222, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:45"}, {"bookmaker_id": 9, "market_id": 1, "label":      
+2026-06-07 17:36:50.652 |       "Away", "value": "8.50", "probability": 0.1176, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:45"}, {"bookmaker_id": 38, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.41", "probability": 0.7092, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:58:40"}, {"bookmaker_id": 38, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.50", "probability": 0.2222, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:58:40"}, {"bookmaker_id": 38, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "8.40", "probability": 0.119, "latest_bookmaker_update": 
+2026-06-07 17:36:50.652 |       "2026-06-07 11:58:40"}, {"bookmaker_id": 14, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.41", "probability": 0.7092, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:09"}, {"bookmaker_id": 14, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.50", "probability": 0.2222, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:09"}, {"bookmaker_id": 14, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "8.20", "probability": 0.122, "latest_bookmaker_update": 
+2026-06-07 17:36:50.652 |       "2026-06-07 11:59:09"}, {"bookmaker_id": 16, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.44", "probability": 0.6944, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:12"}, {"bookmaker_id": 16, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Draw", "value": "4.50", "probability": 0.2222, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:12"}, {"bookmaker_id": 16, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "8.70", "probability": 0.1149, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:12"}, {"bookmaker_id": 66, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Home", "value": "1.36", "probability": 0.7353, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:00:23"}, {"bookmaker_id": 32, "market_id": 1, "label":     
+2026-06-07 17:36:50.652 |       "Away", "value": "7.50", "probability": 0.1333, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 11:58:48"}, {"bookmaker_id": 2, "market_id": 1, "label":      
+2026-06-07 17:36:50.652 |       "Home", "value": "1.40", "probability": 0.7143, "latest_bookmaker_update":
+2026-06-07 17:36:50.652 |       "2026-06-07 12:01:22"}, {"bookmaker_id": 2, "market_id": 1, "label":      
+2026-06-07 17:36:50.652 |       "Away", "value": "8.00", "probability": 0.125, "latest_bookmaker_update": 
+2026-06-07 17:36:50.652 |       "2026-06-07 12:01:22"}], "match_result_row_count": 48,                    
+2026-06-07 17:36:50.652 |       "match_result_bookmaker_count": 16, "match_result_vig_free_consensus":    
+2026-06-07 17:36:50.652 |       {"draw": 0.2167, "MEX": 0.665, "ZAF": 0.1183}, "bookmaker_probabilities": 
+2026-06-07 17:36:50.652 |       [{"bookmaker_id": 2, "probabilities": {"draw": 0.2157, "MEX": 0.6675,     
+2026-06-07 17:36:50.652 |       "ZAF": 0.1168}}, {"bookmaker_id": 58, "probabilities": {"ZAF": 0.1155,    
+2026-06-07 17:36:50.652 |       "MEX": 0.6668, "draw": 0.2177}}, {"bookmaker_id": 34, "probabilities":    
+2026-06-07 17:36:50.652 |       {"MEX": 0.6672, "ZAF": 0.112, "draw": 0.2208}}, {"bookmaker_id": 29,      
+2026-06-07 17:36:50.652 |       "probabilities": {"ZAF": 0.1214, "MEX": 0.6508, "draw": 0.2278}},         
+2026-06-07 17:36:50.652 |       {"bookmaker_id": 32, "probabilities": {"MEX": 0.656, "draw": 0.2181,      
+2026-06-07 17:36:50.652 |       "ZAF": 0.1259}}, {"bookmaker_id": 13, "probabilities": {"draw": 0.2181,   
+2026-06-07 17:36:50.652 |       "ZAF": 0.1259, "MEX": 0.656}}, {"bookmaker_id": 66, "probabilities":      
+2026-06-07 17:36:50.652 |       {"draw": 0.2185, "ZAF": 0.1227, "MEX": 0.6588}}, {"bookmaker_id": 27,     
+2026-06-07 17:36:50.652 |       "probabilities": {"MEX": 0.6365, "draw": 0.2221, "ZAF": 0.1414}},         
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 35, "probabilities": {"MEX": 0.6708, "draw": 0.2161,     
+2026-06-07 17:36:50.653 |       "ZAF": 0.1131}}, {"bookmaker_id": 64, "probabilities": {"MEX": 0.6703,    
+2026-06-07 17:36:50.653 |       "draw": 0.2167, "ZAF": 0.113}}, {"bookmaker_id": 20, "probabilities":     
+2026-06-07 17:36:50.653 |       {"MEX": 0.6749, "draw": 0.2117, "ZAF": 0.1134}}, {"bookmaker_id": 28,     
+2026-06-07 17:36:50.653 |       "probabilities": {"MEX": 0.6586, "draw": 0.219, "ZAF": 0.1224}},          
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 9, "probabilities": {"MEX": 0.6839, "draw": 0.2067,      
+2026-06-07 17:36:50.653 |       "ZAF": 0.1094}}, {"bookmaker_id": 38, "probabilities": {"MEX": 0.6752,    
+2026-06-07 17:36:50.653 |       "draw": 0.2115, "ZAF": 0.1133}}, {"bookmaker_id": 14, "probabilities":    
+2026-06-07 17:36:50.653 |       {"MEX": 0.6732, "draw": 0.2109, "ZAF": 0.1158}}, {"bookmaker_id": 16,     
+2026-06-07 17:36:50.653 |       "probabilities": {"MEX": 0.6732, "draw": 0.2154, "ZAF": 0.1114}}]},       
+2026-06-07 17:36:50.653 |       "expected_goals": null, "factual_context": {"kickoff": "2026-06-11        
+2026-06-07 17:36:50.653 |       19:00:00", "venue": {"id": 1599, "country_id": 458, "city_id": 56760,     
+2026-06-07 17:36:50.653 |       "name": "Mexico City Stadium", "address": "Calzada de Tlalpan 3665,       
+2026-06-07 17:36:50.653 |       Coyoac\u00e1n", "zipcode": null, "latitude": "19.30294", "longitude":     
+2026-06-07 17:36:50.653 |       "-99.15048", "capacity": 87523, "image_path":                             
+2026-06-07 17:36:50.653 |       "https://cdn.sportmonks.com/images/core/venues/31/1599.png", "city_name": 
+2026-06-07 17:36:50.653 |       "Mexico City", "surface": "grass", "national_team": false}, "stage":      
+2026-06-07 17:36:50.653 |       {"id": 77478590, "sport_id": 1, "league_id": 732, "season_id": 26618,     
+2026-06-07 17:36:50.653 |       "type_id": 223, "name": "Group Stage", "sort_order": 1, "finished": false,
+2026-06-07 17:36:50.653 |       "is_current": false, "starting_at": "2026-06-11", "ending_at":            
+2026-06-07 17:36:50.653 |       "2026-06-28", "games_in_current_week": false, "tie_breaker_rule_id":      
+2026-06-07 17:36:50.653 |       null}, "round": {"id": 395361, "sport_id": 1, "league_id": 732,           
+2026-06-07 17:36:50.653 |       "season_id": 26618, "stage_id": 77478590, "name": "1", "finished": false, 
+2026-06-07 17:36:50.653 |       "is_current": false, "starting_at": "2026-06-11", "ending_at":            
+2026-06-07 17:36:50.653 |       "2026-06-18", "games_in_current_week": false}, "weather": null,           
+2026-06-07 17:36:50.653 |       "weather_source": "weather_report", "lineups_available": true,            
+2026-06-07 17:36:50.653 |       "lineup_count": 22, "sidelined_available": true, "sidelined_count": 1,    
+2026-06-07 17:36:50.653 |       "coaches": [{"id": 896106, "player_id": 896106, "sport_id": 1,            
+2026-06-07 17:36:50.653 |       "country_id": 556, "nationality_id": 556, "city_id": null, "common_name": 
+2026-06-07 17:36:50.653 |       "H. Broos", "firstname": "Hugo", "lastname": "Broos", "name": "Hugo       
+2026-06-07 17:36:50.653 |       Broos", "display_name": "Hugo Broos", "image_path":                       
+2026-06-07 17:36:50.653 |       "https://cdn.sportmonks.com/images/soccer/placeholder.png", "height": 180,
+2026-06-07 17:36:50.653 |       "weight": 78, "date_of_birth": "1952-04-10", "gender": "male", "meta":    
+2026-06-07 17:36:50.653 |       {"fixture_id": 19609127, "coach_id": 896106, "participant_id": 18555}},   
+2026-06-07 17:36:50.653 |       {"id": 896798, "player_id": 896798, "sport_id": 1, "country_id": 458,     
+2026-06-07 17:36:50.653 |       "nationality_id": 458, "city_id": null, "common_name": "J. Aguirre        
+2026-06-07 17:36:50.653 |       Onaind\u00eda", "firstname": "Javier", "lastname": "Aguirre               
+2026-06-07 17:36:50.653 |       Onaind\u00eda", "name": "Javier Aguirre Onaind\u00eda", "display_name":   
+2026-06-07 17:36:50.653 |       "Javier Aguirre Onaind\u00eda", "image_path":                             
+2026-06-07 17:36:50.653 |       "https://cdn.sportmonks.com/images/soccer/coaches/30/896798.png",         
+2026-06-07 17:36:50.653 |       "height": null, "weight": null, "date_of_birth": "1958-12-01", "gender":  
+2026-06-07 17:36:50.653 |       "male", "meta": {"fixture_id": 19609127, "coach_id": 896798,              
+2026-06-07 17:36:50.653 |       "participant_id": 18576}}], "referees": [], "teams": {"home": {"id":      
+2026-06-07 17:36:50.653 |       18576, "name": "Mexico", "short_code": "MEX"}, "away": {"id": 18555,      
+2026-06-07 17:36:50.653 |       "name": "South Africa", "short_code": "ZAF"}}}, "data_quality":           
+2026-06-07 17:36:50.653 |       {"participants": "available", "fulltime_result_probability": "available", 
+2026-06-07 17:36:50.653 |       "match_result_odds": "available", "expected_goals": "missing", "lineups": 
+2026-06-07 17:36:50.653 |       "available", "sidelined": "available", "weather": "missing", "venue":     
+2026-06-07 17:36:50.653 |       "available", "coaches": "available", "referees": "missing"}},             
+2026-06-07 17:36:50.653 |       "prediction_rows": [{"id": 27413319, "fixture_id": 19609127,              
+2026-06-07 17:36:50.653 |       "predictions": {"yes": 42.9, "no": 57.1}, "type_id": 235}, {"id":         
+2026-06-07 17:36:50.653 |       27413329, "fixture_id": 19609127, "predictions": {"yes": 2.82, "no":      
+2026-06-07 17:36:50.653 |       97.18}, "type_id": 327}, {"id": 27413325, "fixture_id": 19609127,         
+2026-06-07 17:36:50.653 |       "predictions": {"yes": 4.16, "no": 95.84}, "type_id": 326}, {"id":        
+2026-06-07 17:36:50.653 |       27413327, "fixture_id": 19609127, "predictions": {"yes": 28.77, "no":     
+2026-06-07 17:36:50.653 |       71.23}, "type_id": 332}, {"id": 27413314, "fixture_id": 19609127,         
+2026-06-07 17:36:50.653 |       "predictions": {"yes": 47.02, "no": 52.98}, "type_id": 231}, {"id":       
+2026-06-07 17:36:50.653 |       27413317, "fixture_id": 19609127, "predictions": {"scores": {"0-0": 9.39, 
+2026-06-07 17:36:50.653 |       "0-1": 9.8, "0-2": 5.13, "0-3": 2.36, "1-0": 12.08, "1-1": 13.15, "1-2":  
+2026-06-07 17:36:50.653 |       7.04, "1-3": 2.63, "2-0": 7.56, "2-1": 8.47, "2-2": 4.38, "2-3": 1.81,    
+2026-06-07 17:36:50.653 |       "3-0": 3.28, "3-1": 3.43, "3-2": 1.91, "3-3": 0.69, "Other_1": 4.08,      
+2026-06-07 17:36:50.653 |       "Other_2": 2.74, "Other_X": 0.08}}, "type_id": 240}, {"id": 27413323,     
+2026-06-07 17:36:50.653 |       "fixture_id": 19609127, "predictions": {"yes": 35.69, "no": 64.31},       
+2026-06-07 17:36:50.653 |       "type_id": 331}, {"id": 27413324, "fixture_id": 19609127, "predictions":  
+2026-06-07 17:36:50.653 |       {"yes": 13.47, "no": 86.53}, "type_id": 330}, {"id": 27413326,            
+2026-06-07 17:36:50.653 |       "fixture_id": 19609127, "predictions": {"yes": 63.62, "no": 36.38},       
+2026-06-07 17:36:50.653 |       "type_id": 333}, {"id": 27542754, "fixture_id": 19609127, "predictions":  
+2026-06-07 17:36:50.653 |       {"yes": 71.63, "no": 18.54, "equal": 9.83}, "type_id": 1683}, {"id":      
+2026-06-07 17:36:50.653 |       27413318, "fixture_id": 19609127, "predictions": {"yes": 68.74, "no":     
+2026-06-07 17:36:50.653 |       31.26}, "type_id": 234}, {"id": 27413321, "fixture_id": 19609127,         
+2026-06-07 17:36:50.653 |       "predictions": {"yes": 11.31, "no": 88.69}, "type_id": 1679}, {"id":      
+2026-06-07 17:36:50.653 |       27542755, "fixture_id": 19609127, "predictions": {"yes": 60.32, "no":     
+2026-06-07 17:36:50.653 |       28.38, "equal": 11.31}, "type_id": 1685}, {"id": 27542761, "fixture_id":  
+2026-06-07 17:36:50.653 |       19609127, "predictions": {"yes": 14.16, "no": 79.97, "equal": 5.86},      
+2026-06-07 17:36:50.653 |       "type_id": 1684}, {"id": 27542751, "fixture_id": 19609127, "predictions": 
+2026-06-07 17:36:50.653 |       {"home": 28.8, "away": 25.28, "draw": 45.92}, "type_id": 233}, {"id":     
+2026-06-07 17:36:50.653 |       27413315, "fixture_id": 19609127, "predictions": {"home": 40.81, "away":  
+2026-06-07 17:36:50.653 |       31.5, "draw": 27.69}, "type_id": 237}, {"id": 27542752, "fixture_id":     
+2026-06-07 17:36:50.653 |       19609127, "predictions": {"home": 50.34, "away": 40.27, "draw": 9.39},    
+2026-06-07 17:36:50.653 |       "type_id": 238}, {"id": 27413316, "fixture_id": 19609127, "predictions":  
+2026-06-07 17:36:50.653 |       {"draw_home": 68.5, "draw_away": 59.19, "home_away": 72.31}, "type_id":   
+2026-06-07 17:36:50.653 |       239}, {"id": 27542753, "fixture_id": 19609127, "predictions": {"yes":     
+2026-06-07 17:36:50.653 |       81.46, "no": 10.85, "equal": 7.7}, "type_id": 1690}, {"id": 27542756,     
+2026-06-07 17:36:50.653 |       "fixture_id": 19609127, "predictions": {"yes": 48.56, "no": 39.68,        
+2026-06-07 17:36:50.653 |       "equal": 11.76}, "type_id": 1686}, {"id": 27542757, "fixture_id":         
+2026-06-07 17:36:50.653 |       19609127, "predictions": {"yes": 37.44, "no": 51.44, "equal": 11.12},     
+2026-06-07 17:36:50.653 |       "type_id": 1689}, {"id": 27542758, "fixture_id": 19609127, "predictions": 
+2026-06-07 17:36:50.653 |       {"yes": 27.79, "no": 62.56, "equal": 9.65}, "type_id": 1687}, {"id":      
+2026-06-07 17:36:50.653 |       27542759, "fixture_id": 19609127, "predictions": {"yes": 20.03, "no":     
+2026-06-07 17:36:50.653 |       72.21, "equal": 7.76}, "type_id": 1688}, {"id": 27542750, "fixture_id":   
+2026-06-07 17:36:50.653 |       19609127, "predictions": {"home_home": 20.75, "home_away": 2.52,          
+2026-06-07 17:36:50.653 |       "home_draw": 5.3, "away_home": 2.12, "away_away": 17.92, "away_draw":     
+2026-06-07 17:36:50.653 |       5.04, "draw_draw": 17.58, "draw_home": 16.45, "draw_away": 12.32},        
+2026-06-07 17:36:50.653 |       "type_id": 232}, {"id": 27413320, "fixture_id": 19609127, "predictions":  
+2026-06-07 17:36:50.653 |       {"yes": 21.74, "no": 78.26}, "type_id": 236}, {"id": 27413322,            
+2026-06-07 17:36:50.653 |       "fixture_id": 19609127, "predictions": {"yes": 70.59, "no": 29.41},       
+2026-06-07 17:36:50.653 |       "type_id": 334}, {"id": 27413328, "fixture_id": 19609127, "predictions":  
+2026-06-07 17:36:50.653 |       {"yes": 10.31, "no": 89.69}, "type_id": 328}, {"id": 27542760,            
+2026-06-07 17:36:50.653 |       "fixture_id": 19609127, "predictions": {"yes": 20.03, "no": 79.97,        
+2026-06-07 17:36:50.653 |       "equal": null}, "type_id": 1585}], "match_result_odds_rows":              
+2026-06-07 17:36:50.653 |       [{"bookmaker_id": 2, "market_id": 1, "label": "Draw", "value": "4.33",    
+2026-06-07 17:36:50.653 |       "probability": 0.2308, "latest_bookmaker_update": "2026-06-07 12:01:22"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 58, "market_id": 1, "label": "Away", "value": "8.20",    
+2026-06-07 17:36:50.653 |       "probability": 0.122, "latest_bookmaker_update": "2026-06-07 12:00:24"},  
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 34, "market_id": 1, "label": "Home", "value": "1.41",    
+2026-06-07 17:36:50.653 |       "probability": 0.7092, "latest_bookmaker_update": "2026-06-07 11:43:09"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 29, "market_id": 1, "label": "Away", "value": "7.50",    
+2026-06-07 17:36:50.653 |       "probability": 0.1333, "latest_bookmaker_update": "2026-06-07 11:57:37"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 29, "market_id": 1, "label": "Home", "value": "1.40",    
+2026-06-07 17:36:50.653 |       "probability": 0.7143, "latest_bookmaker_update": "2026-06-07 11:57:37"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 58, "market_id": 1, "label": "Home", "value": "1.42",    
+2026-06-07 17:36:50.653 |       "probability": 0.7042, "latest_bookmaker_update": "2026-06-07 12:00:24"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 34, "market_id": 1, "label": "Away", "value": "8.40",    
+2026-06-07 17:36:50.653 |       "probability": 0.119, "latest_bookmaker_update": "2026-06-07 11:43:09"},  
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 32, "market_id": 1, "label": "Home", "value": "1.44",    
+2026-06-07 17:36:50.653 |       "probability": 0.6944, "latest_bookmaker_update": "2026-06-07 11:58:48"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 32, "market_id": 1, "label": "Draw", "value": "4.33",    
+2026-06-07 17:36:50.653 |       "probability": 0.2309, "latest_bookmaker_update": "2026-06-07 11:58:48"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 34, "market_id": 1, "label": "Draw", "value": "4.26",    
+2026-06-07 17:36:50.653 |       "probability": 0.2347, "latest_bookmaker_update": "2026-06-07 11:43:09"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 13, "market_id": 1, "label": "Draw", "value": "4.33",    
+2026-06-07 17:36:50.653 |       "probability": 0.2309, "latest_bookmaker_update": "2026-06-07 11:59:29"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 13, "market_id": 1, "label": "Away", "value": "7.50",    
+2026-06-07 17:36:50.653 |       "probability": 0.1333, "latest_bookmaker_update": "2026-06-07 11:59:29"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 66, "market_id": 1, "label": "Draw", "value": "4.10",    
+2026-06-07 17:36:50.653 |       "probability": 0.2439, "latest_bookmaker_update": "2026-06-07 12:00:23"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 66, "market_id": 1, "label": "Away", "value": "7.30",    
+2026-06-07 17:36:50.653 |       "probability": 0.137, "latest_bookmaker_update": "2026-06-07 12:00:23"},  
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 27, "market_id": 1, "label": "Home", "value": "1.50",    
+2026-06-07 17:36:50.653 |       "probability": 0.6667, "latest_bookmaker_update": "2026-05-26 20:20:00"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 27, "market_id": 1, "label": "Draw", "value": "4.30",    
+2026-06-07 17:36:50.653 |       "probability": 0.2326, "latest_bookmaker_update": "2026-05-26 20:20:00"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 27, "market_id": 1, "label": "Away", "value": "6.75",    
+2026-06-07 17:36:50.653 |       "probability": 0.1481, "latest_bookmaker_update": "2026-05-26 20:20:00"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 35, "market_id": 1, "label": "Home", "value": "1.45",    
+2026-06-07 17:36:50.653 |       "probability": 0.6897, "latest_bookmaker_update": "2026-06-07 11:56:01"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 35, "market_id": 1, "label": "Draw", "value": "4.50",    
+2026-06-07 17:36:50.653 |       "probability": 0.2222, "latest_bookmaker_update": "2026-06-07 11:56:01"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 35, "market_id": 1, "label": "Away", "value": "8.60",    
+2026-06-07 17:36:50.653 |       "probability": 0.1163, "latest_bookmaker_update": "2026-06-07 11:56:01"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 58, "market_id": 1, "label": "Draw", "value": "4.35",    
+2026-06-07 17:36:50.653 |       "probability": 0.2299, "latest_bookmaker_update": "2026-06-07 12:00:24"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 64, "market_id": 1, "label": "Home", "value": "1.41",    
+2026-06-07 17:36:50.653 |       "probability": 0.7062, "latest_bookmaker_update": "2026-06-07 11:59:20"}, 
+2026-06-07 17:36:50.653 |       {"bookmaker_id": 64, "market_id": 1, "label": "Draw", "value": "4.38",    
+2026-06-07 17:36:50.653 |       "probability": 0.2283, "latest_bookmaker_update": "2026-06-07 11:59:20"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 64, "market_id": 1, "label": "Away", "value": "8.40",    
+2026-06-07 17:36:50.654 |       "probability": 0.119, "latest_bookmaker_update": "2026-06-07 11:59:20"},  
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 13, "market_id": 1, "label": "Home", "value": "1.44",    
+2026-06-07 17:36:50.654 |       "probability": 0.6944, "latest_bookmaker_update": "2026-06-07 11:59:29"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 29, "market_id": 1, "label": "Draw", "value": "4.00",    
+2026-06-07 17:36:50.654 |       "probability": 0.25, "latest_bookmaker_update": "2026-06-07 11:57:37"},   
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 20, "market_id": 1, "label": "Home", "value": "1.42",    
+2026-06-07 17:36:50.654 |       "probability": 0.7008, "latest_bookmaker_update": "2026-06-07 11:59:44"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 20, "market_id": 1, "label": "Draw", "value": "4.55",    
+2026-06-07 17:36:50.654 |       "probability": 0.2198, "latest_bookmaker_update": "2026-06-07 11:59:44"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 20, "market_id": 1, "label": "Away", "value": "8.49",    
+2026-06-07 17:36:50.654 |       "probability": 0.1178, "latest_bookmaker_update": "2026-06-07 11:59:44"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 28, "market_id": 1, "label": "Home", "value": "1.44",    
+2026-06-07 17:36:50.654 |       "probability": 0.6944, "latest_bookmaker_update": "2026-06-07 12:00:15"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 28, "market_id": 1, "label": "Draw", "value": "4.33",    
+2026-06-07 17:36:50.654 |       "probability": 0.2309, "latest_bookmaker_update": "2026-06-07 12:00:15"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 28, "market_id": 1, "label": "Away", "value": "7.75",    
+2026-06-07 17:36:50.654 |       "probability": 0.129, "latest_bookmaker_update": "2026-06-07 12:00:15"},  
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 9, "market_id": 1, "label": "Home", "value": "1.36",     
+2026-06-07 17:36:50.654 |       "probability": 0.7353, "latest_bookmaker_update": "2026-06-07 11:59:45"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 9, "market_id": 1, "label": "Draw", "value": "4.50",     
+2026-06-07 17:36:50.654 |       "probability": 0.2222, "latest_bookmaker_update": "2026-06-07 11:59:45"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 9, "market_id": 1, "label": "Away", "value": "8.50",     
+2026-06-07 17:36:50.654 |       "probability": 0.1176, "latest_bookmaker_update": "2026-06-07 11:59:45"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 38, "market_id": 1, "label": "Home", "value": "1.41",    
+2026-06-07 17:36:50.654 |       "probability": 0.7092, "latest_bookmaker_update": "2026-06-07 11:58:40"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 38, "market_id": 1, "label": "Draw", "value": "4.50",    
+2026-06-07 17:36:50.654 |       "probability": 0.2222, "latest_bookmaker_update": "2026-06-07 11:58:40"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 38, "market_id": 1, "label": "Away", "value": "8.40",    
+2026-06-07 17:36:50.654 |       "probability": 0.119, "latest_bookmaker_update": "2026-06-07 11:58:40"},  
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 14, "market_id": 1, "label": "Home", "value": "1.41",    
+2026-06-07 17:36:50.654 |       "probability": 0.7092, "latest_bookmaker_update": "2026-06-07 11:59:09"}, 
+2026-06-07 17:36:50.654 |       {"bookmaker_id": 14, "market_id": 1, "label": "Draw", "value":            
+2026-06-07 17:36:50.654 |       "4.5...[truncated, was 76529 chars]                                       
+2026-06-07 17:36:50.654 |                                                                                 
+2026-06-07 17:36:50.654 | DEBUG Creating new sync OpenAI client for model deepseek/deepseek-v4-flash      
+2026-06-07 17:36:56.730 | DEBUG ======================== assistant =========================              
+2026-06-07 17:36:56.738 | DEBUG <reasoning>                                                               
+2026-06-07 17:36:56.738 |       We need to parse the provided Sportmonks data for Mexico vs South Africa  
+2026-06-07 17:36:56.738 |       fixture. The data includes features with predictions, odds, factual       
+2026-06-07 17:36:56.738 |       context, etc. The task is to digest this into the specified JSON schema.  
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       From the features object, we have:                                        
+2026-06-07 17:36:56.738 |       - fulltime_result_probability: MEX 0.4081, draw 0.2769, ZAF 0.315.        
+2026-06-07 17:36:56.738 |       - match_result_vig_free_consensus: draw 0.2167, MEX 0.665, ZAF 0.1183.    
+2026-06-07 17:36:56.738 |       - expected_goals: null.                                                   
+2026-06-07 17:36:56.738 |       - factual_context: includes kickoff time, venue, stage, round, no weather,
+2026-06-07 17:36:56.738 |       lineups available (22), sidelined count 1, coaches, no referees.          
+2026-06-07 17:36:56.738 |       - No head_to_head or live_standings enrichment provided, so summaries will
+2026-06-07 17:36:56.738 |       be null.                                                                  
+2026-06-07 17:36:56.738 |       - available_signals: We need to list all signal types available. Based on 
+2026-06-07 17:36:56.738 |       features, we have fulltime_result_probability (ML predictions),           
+2026-06-07 17:36:56.738 |       match_result_vig_free_consensus (bookmaker odds), factual_context, and    
+2026-06-07 17:36:56.738 |       many other ML predictions (like btts, over_under, first_half_winner,      
+2026-06-07 17:36:56.738 |       etc.). But the instruction says to prefer decoded features object. So we  
+2026-06-07 17:36:56.738 |       list the main signals: "fulltime_result_probability",                     
+2026-06-07 17:36:56.738 |       "bookmaker_consensus", "factual_context", "ml_predictions". Also "lineups"
+2026-06-07 17:36:56.738 |       and "sidelined" are available. "weather" is missing. "expected_goals" is  
+2026-06-07 17:36:56.738 |       missing.                                                                  
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       probabilities: use fulltime_result_probability from features: MEX 0.4081, 
+2026-06-07 17:36:56.738 |       draw 0.2769, ZAF 0.315. These are already decimals.                       
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       bookmaker_consensus_probabilities: use match_result_vig_free_consensus:   
+2026-06-07 17:36:56.738 |       MEX 0.665, draw 0.2167, ZAF 0.1183.                                       
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       expected_goals: null.                                                     
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       factual_context_summary: We need to write a concise summary from          
+2026-06-07 17:36:56.738 |       factual_context. Kickoff: 2026-06-11 19:00:00, venue: Mexico City Stadium,
+2026-06-07 17:36:56.738 |       capacity 87523, surface grass, stage: Group Stage, round: 1, coach for    
+2026-06-07 17:36:56.738 |       Mexico: Javier Aguirre, for South Africa: Hugo Broos, lineups available   
+2026-06-07 17:36:56.738 |       (22 players), sidelined players count 1, no weather data, no referees.    
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       head_to_head_summary: null because no head_to_head provided.              
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       standings_summary: null.                                                  
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       ml_prediction_reliability: The instruction says "Treat                    
+2026-06-07 17:36:56.738 |       features.predictions.fulltime_result_probability as a weak baseline       
+2026-06-07 17:36:56.738 |       signal, not a reliable forecast by itself." Also "Do not treat            
+2026-06-07 17:36:56.738 |       FIRST_HALF_WINNER_PROBABILITY or TEAM_TO_SCORE_FIRST_PROBABILITY as       
+2026-06-07 17:36:56.738 |       full-time win/draw/loss." And "Use                                        
+2026-06-07 17:36:56.738 |       features.odds.match_result_vig_free_consensus for bookmaker consensus".   
+2026-06-07 17:36:56.738 |       Since we have bookmaker consensus (non-market? Actually bookmaker odds are
+2026-06-07 17:36:56.738 |       market but vig-free is processed), we have a stronger signal. So          
+2026-06-07 17:36:56.738 |       ml_prediction_reliability should be "supported" because we have bookmaker 
+2026-06-07 17:36:56.738 |       odds to support or compare. But note: The instruction says "Explicitly    
+2026-06-07 17:36:56.738 |       flag when Sportmonks ML probabilities are the only non-market football    
+2026-06-07 17:36:56.738 |       signal available." Since we have both ML and bookmaker odds, it's not only
+2026-06-07 17:36:56.738 |       ML. So set to "supported".                                                
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       bookmaker_count: 16 (from match_result_bookmaker_count).                  
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       confidence: We have factual context, lineups, bookmaker consensus from 16 
+2026-06-07 17:36:56.738 |       bookmakers, ML predictions. But missing head_to_head, standings,          
+2026-06-07 17:36:56.738 |       expected_goals, weather, referees. The data gaps: "head_to_head_missing", 
+2026-06-07 17:36:56.738 |       "standings_missing", "expected_goals_missing", "weather_missing",         
+2026-06-07 17:36:56.738 |       "referees_missing". That's quite a few gaps. Also no expected_goals model.
+2026-06-07 17:36:56.738 |       So confidence might be "medium" because we have bookmaker consensus and   
+2026-06-07 17:36:56.738 |       lineups, but missing key contextual data. The summary should reflect that.
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       summary: Provide a brief text summarizing key info.                       
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       Now construct JSON. Avoid markdown fences. Ensure proper formatting.      
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       Also use actual short codes "MEX" and "ZAF" for probability keys.         
+2026-06-07 17:36:56.738 |                                                                                 
+2026-06-07 17:36:56.738 |       Let's produce the JSON.                                                   
+2026-06-07 17:36:56.738 |       </reasoning>                                                              
+2026-06-07 17:36:56.741 | DEBUG {                                                                         
+2026-06-07 17:36:56.741 |         "source": "sportmonks",                                                 
+2026-06-07 17:36:56.741 |         "fixture": "Mexico vs South Africa",                                    
+2026-06-07 17:36:56.741 |         "fixture_id": 19609127,                                                 
+2026-06-07 17:36:56.741 |         "home_team": "Mexico",                                                  
+2026-06-07 17:36:56.741 |         "away_team": "South Africa",                                            
+2026-06-07 17:36:56.741 |         "home_code": "MEX",                                                     
+2026-06-07 17:36:56.741 |         "away_code": "ZAF",                                                     
+2026-06-07 17:36:56.741 |         "available_signals": [                                                  
+2026-06-07 17:36:56.741 |           "fulltime_result_probability",                                        
+2026-06-07 17:36:56.741 |           "bookmaker_consensus",                                                
+2026-06-07 17:36:56.741 |           "factual_context",                                                    
+2026-06-07 17:36:56.741 |           "lineups",                                                            
+2026-06-07 17:36:56.741 |           "sidelined",                                                          
+2026-06-07 17:36:56.741 |           "ml_predictions"                                                      
+2026-06-07 17:36:56.741 |         ],                                                                      
+2026-06-07 17:36:56.741 |         "probabilities": {                                                      
+2026-06-07 17:36:56.741 |           "MEX": 0.4081,                                                        
+2026-06-07 17:36:56.741 |                                                                                 
+2026-06-07 17:36:56.742 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:36:56.744 | DEBUG * Tokens:                      input=11440, output=1024, total=12464,     
+2026-06-07 17:36:56.744 |       reasoning=899                                                             
+2026-06-07 17:36:56.745 | DEBUG * Duration:                    6.0769s                                    
+2026-06-07 17:36:56.746 | DEBUG * Tokens per second:           168.5063 tokens/s                          
+2026-06-07 17:36:56.747 | DEBUG * Time to first token:         6.0769s                                    
+2026-06-07 17:36:56.748 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:36:56.749 | DEBUG --------------- OpenRouter Chat Response End ---------------              
+2026-06-07 17:36:56.750 | DEBUG Added RunOutput to Agent Session                                          
+2026-06-07 17:36:56.816 | DEBUG Created or updated AgentSession record: prematch:19609127:20260607T120628Z
+2026-06-07 17:36:56.817 | DEBUG *** Agent Run End: f0895568-41b1-4b2d-ad02-2b8d518634a7 ****              
+2026-06-07 17:37:10.189 | DEBUG ****** Session ID: prematch:19609127:20260607T120628Z ******              
+2026-06-07 17:37:10.190 | DEBUG ************ Agent ID: polymarket-market-agent *************              
+2026-06-07 17:37:10.191 | DEBUG Reading AgentSession: prematch:19609127:20260607T120628Z                  
+2026-06-07 17:37:10.211 | DEBUG ** Agent Run Start: a1405155-3181-4fb8-98bc-0a15993e29f8 ***              
+2026-06-07 17:37:10.212 | DEBUG -------------- OpenRouter Chat Response Start --------------              
+2026-06-07 17:37:10.213 | DEBUG ------------ Model: deepseek/deepseek-v4-flash -------------              
+2026-06-07 17:37:10.214 | DEBUG ========================== system ==========================              
+2026-06-07 17:37:10.217 | DEBUG Digest Polymarket market data into pricing, implied probability, and      
+2026-06-07 17:37:10.217 |       execution handles.                                                        
+2026-06-07 17:37:10.217 |       - Return only valid JSON.                                                 
+2026-06-07 17:37:10.217 |       - Do not wrap the JSON in markdown fences.                                
+2026-06-07 17:37:10.217 |       - Use null when a value is unavailable.                                   
+2026-06-07 17:37:10.217 |       - Be explicit about data gaps and confidence.                             
+2026-06-07 17:37:10.218 | DEBUG =========================== user ===========================              
+2026-06-07 17:37:10.231 | DEBUG                                                                           
+2026-06-07 17:37:10.231 |       Digest the Polymarket market data for one football fixture.               
+2026-06-07 17:37:10.231 |                                                                                 
+2026-06-07 17:37:10.231 |       Return this schema:                                                       
+2026-06-07 17:37:10.231 |       {                                                                         
+2026-06-07 17:37:10.231 |         "source": "polymarket",                                                 
+2026-06-07 17:37:10.231 |         "event_slug": str|null,                                                 
+2026-06-07 17:37:10.231 |         "event_title": str|null,                                                
+2026-06-07 17:37:10.231 |         "implied_probabilities": {"HOME_TEAM_CODE": float|null, "draw":         
+2026-06-07 17:37:10.231 |       float|null, "AWAY_TEAM_CODE": float|null},                                
+2026-06-07 17:37:10.231 |         "sum_implied_probability": float|null,                                  
+2026-06-07 17:37:10.231 |         "execution_handles": [                                                  
+2026-06-07 17:37:10.231 |           {"outcome": str, "condition_id": str|null, "yes_token_id": str|null,  
+2026-06-07 17:37:10.231 |       "mid": float|null}                                                        
+2026-06-07 17:37:10.231 |         ],                                                                      
+2026-06-07 17:37:10.231 |         "pricing_available": bool,                                              
+2026-06-07 17:37:10.231 |         "data_gaps": [str],                                                     
+2026-06-07 17:37:10.231 |         "summary": str                                                          
+2026-06-07 17:37:10.231 |       }                                                                         
+2026-06-07 17:37:10.231 |                                                                                 
+2026-06-07 17:37:10.231 |       Context:                                                                  
+2026-06-07 17:37:10.231 |       {"mapping": {"mappings": [{"away_country": "South Africa",                
+2026-06-07 17:37:10.231 |       "away_short_code": "ZAF", "home_country": "Mexico", "home_short_code":    
+2026-06-07 17:37:10.231 |       "MEX", "match_confidence": "high", "polymarket_away_condition_id":        
+2026-06-07 17:37:10.231 |       "0x17dfc75726fa95d4054d91e80295c8b3e494569617e67a7e620e27562b7952b0",     
+2026-06-07 17:37:10.231 |       "polymarket_away_token_yes":                                              
+2026-06-07 17:37:10.231 |       "1153078609627198050607841632043517690771766120290404015469761027058119107
+2026-06-07 17:37:10.231 |       54396", "polymarket_draw_condition_id":                                   
+2026-06-07 17:37:10.231 |       "0x0a4b9beb6128863db2b107f185521597a426356f1d9a23c7001401edfd32014b",     
+2026-06-07 17:37:10.231 |       "polymarket_draw_token_yes":                                              
+2026-06-07 17:37:10.231 |       "1163414467380332546664318883433730034180373709606709223983476082391272600
+2026-06-07 17:37:10.231 |       0274", "polymarket_event_slug": "fifwc-mex-rsa-2026-06-11",               
+2026-06-07 17:37:10.231 |       "polymarket_event_ticker": "fifwc-mex-rsa-2026-06-11",                    
+2026-06-07 17:37:10.231 |       "polymarket_home_condition_id":                                           
+2026-06-07 17:37:10.231 |       "0x4cd77d456c83e7d8c569a8fb8f6396c3f40154f657e6d970733e2b1b6a7110ff",     
+2026-06-07 17:37:10.231 |       "polymarket_home_token_yes":                                              
+2026-06-07 17:37:10.231 |       "2077906399826847449069988471480831028965917047795911548974127529527035996
+2026-06-07 17:37:10.231 |       2039", "reviewer_notes": null, "sportmonks_fixture_id": "19609127",       
+2026-06-07 17:37:10.231 |       "sportmonks_kickoff_utc": 1781204400000, "sportmonks_match_name": "Mexico 
+2026-06-07 17:37:10.231 |       vs South Africa"}]}, "event_slug": "fifwc-mex-rsa-2026-06-11", "event":   
+2026-06-07 17:37:10.231 |       {"title": "Mexico vs. South Africa", "slug": "fifwc-mex-rsa-2026-06-11"}, 
+2026-06-07 17:37:10.231 |       "markets": [{"question": "Will Mexico win on 2026-06-11?", "condition_id":
+2026-06-07 17:37:10.231 |       "0x4cd77d456c83e7d8c569a8fb8f6396c3f40154f657e6d970733e2b1b6a7110ff",     
+2026-06-07 17:37:10.231 |       "clob_token_ids":                                                         
+2026-06-07 17:37:10.231 |       ["207790639982684744906998847148083102896591704779591154897412752952703599
+2026-06-07 17:37:10.231 |       62039",                                                                   
+2026-06-07 17:37:10.231 |       "3173704751853989953556711203335305928208165348530756687754366538787004129
+2026-06-07 17:37:10.231 |       6100"], "yes_token_id":                                                   
+2026-06-07 17:37:10.231 |       "2077906399826847449069988471480831028965917047795911548974127529527035996
+2026-06-07 17:37:10.231 |       2039", "no_token_id":                                                     
+2026-06-07 17:37:10.231 |       "3173704751853989953556711203335305928208165348530756687754366538787004129
+2026-06-07 17:37:10.231 |       6100", "mid": "0.685"}, {"question": "Will Mexico vs. South Africa end in 
+2026-06-07 17:37:10.231 |       a draw?", "condition_id":                                                 
+2026-06-07 17:37:10.231 |       "0x0a4b9beb6128863db2b107f185521597a426356f1d9a23c7001401edfd32014b",     
+2026-06-07 17:37:10.231 |       "clob_token_ids":                                                         
+2026-06-07 17:37:10.231 |       ["116341446738033254666431888343373003418037370960670922398347608239127260
+2026-06-07 17:37:10.231 |       00274",                                                                   
+2026-06-07 17:37:10.231 |       "3292075445702592334416003741307177703451668124918529827938265663798357919
+2026-06-07 17:37:10.231 |       4324"], "yes_token_id":                                                   
+2026-06-07 17:37:10.231 |       "1163414467380332546664318883433730034180373709606709223983476082391272600
+2026-06-07 17:37:10.231 |       0274", "no_token_id":                                                     
+2026-06-07 17:37:10.231 |       "3292075445702592334416003741307177703451668124918529827938265663798357919
+2026-06-07 17:37:10.231 |       4324", "mid": "0.205"}, {"question": "Will South Africa win on            
+2026-06-07 17:37:10.231 |       2026-06-11?", "condition_id":                                             
+2026-06-07 17:37:10.231 |       "0x17dfc75726fa95d4054d91e80295c8b3e494569617e67a7e620e27562b7952b0",     
+2026-06-07 17:37:10.231 |       "clob_token_ids":                                                         
+2026-06-07 17:37:10.231 |       ["115307860962719805060784163204351769077176612029040401546976102705811910
+2026-06-07 17:37:10.231 |       754396",                                                                  
+2026-06-07 17:37:10.231 |       "1383143764609735784996976227065756575654624164833501975583258875640992524
+2026-06-07 17:37:10.231 |       1179"], "yes_token_id":                                                   
+2026-06-07 17:37:10.231 |       "1153078609627198050607841632043517690771766120290404015469761027058119107
+2026-06-07 17:37:10.231 |       54396", "no_token_id":                                                    
+2026-06-07 17:37:10.231 |       "1383143764609735784996976227065756575654624164833501975583258875640992524
+2026-06-07 17:37:10.231 |       1179", "mid": "0.105"}], "arena_market": {"fetched_at": 1780834030033,    
+2026-06-07 17:37:10.231 |       "fixture_code": "19609127", "kickoff_at": 1781204400000, "outcomes":      
+2026-06-07 17:37:10.231 |       [{"condition_id":                                                         
+2026-06-07 17:37:10.231 |       "0x4cd77d456c83e7d8c569a8fb8f6396c3f40154f657e6d970733e2b1b6a7110ff",     
+2026-06-07 17:37:10.231 |       "mid_price": 0.685, "name": "MEX", "token_id":                            
+2026-06-07 17:37:10.231 |       "2077906399826847449069988471480831028965917047795911548974127529527035996
+2026-06-07 17:37:10.231 |       2039"}, {"condition_id":                                                  
+2026-06-07 17:37:10.231 |       "0x17dfc75726fa95d4054d91e80295c8b3e494569617e67a7e620e27562b7952b0",     
+2026-06-07 17:37:10.231 |       "mid_price": 0.105, "name": "ZAF", "token_id":                            
+2026-06-07 17:37:10.231 |       "1153078609627198050607841632043517690771766120290404015469761027058119107
+2026-06-07 17:37:10.231 |       54396"}, {"condition_id":                                                 
+2026-06-07 17:37:10.231 |       "0x0a4b9beb6128863db2b107f185521597a426356f1d9a23c7001401edfd32014b",     
+2026-06-07 17:37:10.231 |       "mid_price": 0.205, "name": "draw", "token_id":                           
+2026-06-07 17:37:10.231 |       "1163414467380332546664318883433730034180373709606709223983476082391272600
+2026-06-07 17:37:10.231 |       0274"}], "polymarket_event_slug": "fifwc-mex-rsa-2026-06-11",             
+2026-06-07 17:37:10.231 |       "polymarket_event_ticker": "fifwc-mex-rsa-2026-06-11"},                   
+2026-06-07 17:37:10.231 |       "arena_market_error": null}                                               
+2026-06-07 17:37:10.231 |                                                                                 
+2026-06-07 17:37:10.232 | DEBUG Creating new sync OpenAI client for model deepseek/deepseek-v4-flash      
+2026-06-07 17:37:20.219 | DEBUG ======================== assistant =========================              
+2026-06-07 17:37:20.224 | DEBUG {                                                                         
+2026-06-07 17:37:20.224 |         "source": "polymarket",                                                 
+2026-06-07 17:37:20.224 |         "event_slug": "fifwc-mex-rsa-2026-06-11",                               
+2026-06-07 17:37:20.224 |         "event_title": "Mexico vs. South Africa",                               
+2026-06-07 17:37:20.224 |         "implied_probabilities": {                                              
+2026-06-07 17:37:20.224 |           "MEX": 0.685,                                                         
+2026-06-07 17:37:20.224 |           "draw": 0.205,                                                        
+2026-06-07 17:37:20.224 |           "ZAF": 0.105                                                          
+2026-06-07 17:37:20.224 |         },                                                                      
+2026-06-07 17:37:20.224 |         "sum_implied_probability": 0.995,                                       
+2026-06-07 17:37:20.224 |         "execution_handles": [                                                  
+2026-06-07 17:37:20.224 |           {                                                                     
+2026-06-07 17:37:20.224 |             "outcome": "MEX",                                                   
+2026-06-07 17:37:20.224 |             "condition_id":                                                     
+2026-06-07 17:37:20.224 |       "0x4cd77d456c83e7d8c569a8fb8f6396c3f40154f657e6d970733e2b1b6a7110ff",     
+2026-06-07 17:37:20.224 |             "yes_token_id":                                                     
+2026-06-07 17:37:20.224 |       "2077906399826847449069988471480831028965917047795911548974127529527035996
+2026-06-07 17:37:20.224 |       2039",                                                                    
+2026-06-07 17:37:20.224 |             "mid": 0.685                                                        
+2026-06-07 17:37:20.224 |           },                                                                    
+2026-06-07 17:37:20.224 |           {                                                                     
+2026-06-07 17:37:20.224 |             "outcome": "draw",                                                  
+2026-06-07 17:37:20.224 |             "condition_id":                                                     
+2026-06-07 17:37:20.224 |       "0x0a4b9beb6128863db2b107f185521597a426356f1d9a23c7001401edfd32014b",     
+2026-06-07 17:37:20.224 |             "yes_token_id":                                                     
+2026-06-07 17:37:20.224 |       "1163414467380332546664318883433730034180373709606709223983476082391272600
+2026-06-07 17:37:20.224 |       0274",                                                                    
+2026-06-07 17:37:20.224 |             "mid": 0.205                                                        
+2026-06-07 17:37:20.224 |           },                                                                    
+2026-06-07 17:37:20.224 |           {                                                                     
+2026-06-07 17:37:20.224 |             "outcome": "ZAF",                                                   
+2026-06-07 17:37:20.224 |             "condition_id":                                                     
+2026-06-07 17:37:20.224 |       "0x17dfc75726fa95d4054d91e80295c8b3e494569617e67a7e620e27562b7952b0",     
+2026-06-07 17:37:20.224 |             "yes_token_id":                                                     
+2026-06-07 17:37:20.224 |       "1153078609627198050607841632043517690771766120290404015469761027058119107
+2026-06-07 17:37:20.224 |       54396",                                                                   
+2026-06-07 17:37:20.224 |             "mid": 0.105                                                        
+2026-06-07 17:37:20.224 |           }                                                                     
+2026-06-07 17:37:20.224 |         ],                                                                      
+2026-06-07 17:37:20.224 |         "pricing_available": true,                                              
+2026-06-07 17:37:20.224 |         "data_gaps": [],                                                        
+2026-06-07 17:37:20.224 |         "summary": "Polymarket provides mid prices for all three outcomes of the
+2026-06-07 17:37:20.224 |       Mexico vs. South Africa fixture (MEX: 0.685, draw: 0.205, ZAF: 0.105)     
+2026-06-07 17:37:20.224 |       summing to 0.995, indicating no significant data gaps."                   
+2026-06-07 17:37:20.224 |       }                                                                         
+2026-06-07 17:37:20.225 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:37:20.225 | DEBUG * Tokens:                      input=1684, output=496, total=2180         
+2026-06-07 17:37:20.226 | DEBUG * Duration:                    6.6735s                                    
+2026-06-07 17:37:20.227 | DEBUG * Tokens per second:           74.3242 tokens/s                           
+2026-06-07 17:37:20.228 | DEBUG * Time to first token:         6.6735s                                    
+2026-06-07 17:37:20.229 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:37:20.230 | DEBUG --------------- OpenRouter Chat Response End ---------------              
+2026-06-07 17:37:20.231 | DEBUG Added RunOutput to Agent Session                                          
+2026-06-07 17:37:20.297 | DEBUG Created or updated AgentSession record: prematch:19609127:20260607T120628Z
+2026-06-07 17:37:20.298 | DEBUG *** Agent Run End: a1405155-3181-4fb8-98bc-0a15993e29f8 ****              
+2026-06-07 17:37:35.063 | DEBUG ****** Session ID: prematch:19609127:20260607T120628Z ******              
+2026-06-07 17:37:35.064 | DEBUG *********** Agent ID: supabase-historical-agent ************              
+2026-06-07 17:37:35.065 | DEBUG Reading AgentSession: prematch:19609127:20260607T120628Z                  
+2026-06-07 17:37:35.084 | DEBUG ** Agent Run Start: 14d83d08-38d3-4201-bd5c-2163c71425c7 ***              
+2026-06-07 17:37:35.085 | DEBUG -------------- OpenRouter Chat Response Start --------------              
+2026-06-07 17:37:35.086 | DEBUG ------------ Model: deepseek/deepseek-v4-flash -------------              
+2026-06-07 17:37:35.087 | DEBUG ========================== system ==========================              
+2026-06-07 17:37:35.089 | DEBUG Digest Supabase historical priors into team history and matchup signals.  
+2026-06-07 17:37:35.089 |       - Return only valid JSON.                                                 
+2026-06-07 17:37:35.089 |       - Do not wrap the JSON in markdown fences.                                
+2026-06-07 17:37:35.089 |       - Use null when a value is unavailable.                                   
+2026-06-07 17:37:35.089 |       - Be explicit about data gaps and confidence.                             
+2026-06-07 17:37:35.090 | DEBUG =========================== user ===========================              
+2026-06-07 17:37:35.114 | DEBUG                                                                           
+2026-06-07 17:37:35.114 |       Digest the Supabase historical priors for the two countries.              
+2026-06-07 17:37:35.114 |                                                                                 
+2026-06-07 17:37:35.114 |       Prefer the decoded `features` object when it is available. Use raw table  
+2026-06-07 17:37:35.114 |       rows as audit context.                                                    
+2026-06-07 17:37:35.114 |       The `features` object summarizes arena historical country IDs, style      
+2026-06-07 17:37:35.114 |       priors, group-stage records,                                              
+2026-06-07 17:37:35.114 |       knockout patterns, special-match history, and direct H2H row availability.
+2026-06-07 17:37:35.114 |       Use `statsbomb_open_data` as an optional historical factual fallback when 
+2026-06-07 17:37:35.114 |       Supabase aggregate rows are missing.                                      
+2026-06-07 17:37:35.114 |       Never join StatsBomb, Sportmonks, and Supabase by numeric country IDs;    
+2026-06-07 17:37:35.114 |       StatsBomb is joined only by explicit team-name aliases.                   
+2026-06-07 17:37:35.114 |                                                                                 
+2026-06-07 17:37:35.114 |       Return this schema:                                                       
+2026-06-07 17:37:35.114 |       {                                                                         
+2026-06-07 17:37:35.114 |         "source": "supabase",                                                   
+2026-06-07 17:37:35.114 |         "home_country": str,                                                    
+2026-06-07 17:37:35.114 |         "away_country": str,                                                    
+2026-06-07 17:37:35.114 |         "available_tables": [str],                                              
+2026-06-07 17:37:35.114 |         "historical_signals": [                                                 
+2026-06-07 17:37:35.114 |           {"signal": str, "home_value": str|float|null, "away_value":           
+2026-06-07 17:37:35.114 |       str|float|null, "interpretation": str}                                    
+2026-06-07 17:37:35.114 |         ],                                                                      
+2026-06-07 17:37:35.114 |         "h2h_summary": str|null,                                                
+2026-06-07 17:37:35.114 |         "confidence": "low"|"medium"|"high",                                    
+2026-06-07 17:37:35.114 |         "data_gaps": [str],                                                     
+2026-06-07 17:37:35.114 |         "summary": str                                                          
+2026-06-07 17:37:35.114 |       }                                                                         
+2026-06-07 17:37:35.114 |                                                                                 
+2026-06-07 17:37:35.114 |       Context:                                                                  
+2026-06-07 17:37:35.114 |       {"home_country": {"name": "Mexico", "code": "MEX", "country_id": 147,     
+2026-06-07 17:37:35.114 |       "resolution": {"country_id": 147, "source": "config_alias", "matched":    
+2026-06-07 17:37:35.114 |       "Mexico", "sportmonks_country_id": 458}}, "away_country": {"name": "South 
+2026-06-07 17:37:35.114 |       Africa", "code": "ZAF", "country_id": 211, "resolution": {"country_id":   
+2026-06-07 17:37:35.114 |       211, "source": "config_alias", "matched": "South Africa",                 
+2026-06-07 17:37:35.114 |       "sportmonks_country_id": 146}}, "catalog_tables": [{"table_name":         
+2026-06-07 17:37:35.114 |       "ads_a_country_struct", "description": "Country-level prior data capturing
+2026-06-07 17:37:35.114 |       each nation's most recent major tournament final appearance since 2000,   
+2026-06-07 17:37:35.114 |       with one row per country.", "row_count": 66}, {"table_name":              
+2026-06-07 17:37:35.114 |       "ads_a_country_style", "description": "One row per country containing     
+2026-06-07 17:37:35.114 |       aggregated set-piece shooting performance and defensive statistics across 
+2026-06-07 17:37:35.114 |       major tournaments, including conversion rates and goals conceded per game 
+2026-06-07 17:37:35.114 |       by competition stage.", "row_count": 71}, {"table_name":                  
+2026-06-07 17:37:35.114 |       "ads_a_h2h_continent", "description": "One row per ordered continent pair,
+2026-06-07 17:37:35.114 |       containing historical head-to-head match statistics including total       
+2026-06-07 17:37:35.114 |       matches played, wins/draws/losses for continent A, and continent A's win  
+2026-06-07 17:37:35.114 |       rate.", "row_count": 28}, {"table_name": "ads_a_h2h_country",             
+2026-06-07 17:37:35.114 |       "description": "One row per ordered country pair and match scope,         
+2026-06-07 17:37:35.114 |       summarizing their head-to-head record with raw and recency-weighted       
+2026-06-07 17:37:35.114 |       win/draw/loss counts, win rate, total matches, and date of last meeting.",
+2026-06-07 17:37:35.114 |       "row_count": 1484}, {"table_name": "ads_a_ko_pattern", "description": "One
+2026-06-07 17:37:35.114 |       row per country, summarizing its knockout stage performance across major  
+2026-06-07 17:37:35.114 |       tournaments including tournament frequency, first-match win-loss records, 
+2026-06-07 17:37:35.114 |       loss rate, and the stage at which it most commonly exits.", "row_count":  
+2026-06-07 17:37:35.114 |       71}, {"table_name": "ads_a_manager", "description": "One row per football 
+2026-06-07 17:37:35.114 |       manager, containing their career tenure span, tournament experience across
+2026-06-07 17:37:35.114 |       multiple teams, and knockout-stage match performance statistics including 
+2026-06-07 17:37:35.114 |       wins, draws, losses, and win rate.", "row_count": 206}, {"table_name":    
+2026-06-07 17:37:35.114 |       "ads_a_special_match", "description": "One row per country summarizes its 
+2026-06-07 17:37:35.114 |       historical performance in extra-time and penalty shootout scenarios across
+2026-06-07 17:37:35.114 |       major tournaments, including match counts, outcomes, and success rates for
+2026-06-07 17:37:35.114 |       each situation type.", "row_count": 36}, {"table_name":                   
+2026-06-07 17:37:35.114 |       "ads_a_stage_record", "description": "One row per country and tournament  
+2026-06-07 17:37:35.114 |       stage, summarizing that country's historical match record (wins, draws,   
+2026-06-07 17:37:35.114 |       losses, win rate) at each stage of tournament competition.", "row_count": 
+2026-06-07 17:37:35.114 |       180}, {"table_name": "d_checkpoint_minutes", "description": "Records the  
+2026-06-07 17:37:35.114 |       actual end minute and period for each checkpoint within a match, with one 
+2026-06-07 17:37:35.114 |       row per checkpoint per match, enabling tracking of when match segments    
+2026-06-07 17:37:35.114 |       conclude.", "row_count": 130}, {"table_name": "d_checkpoint_runs",        
+2026-06-07 17:37:35.114 |       "description": "One row per checkpoint processing job run, capturing the  
+2026-06-07 17:37:35.114 |       execution details including match identifier, checkpoint code, start and  
+2026-06-07 17:37:35.114 |       finish timestamps, completion status, and any error messages              
+2026-06-07 17:37:35.114 |       encountered.", "row_count": 130}, {"table_name": "d_checkpoint_snapshot", 
+2026-06-07 17:37:35.114 |       "description": "One row per team per match checkpoint (HT, FT, ET1, ET2)  
+2026-06-07 17:37:35.114 |       capturing cumulative and segment-level performance metrics including      
+2026-06-07 17:37:35.114 |       goals, cards, substitutions, shots, passes, xG, possession and tactical   
+2026-06-07 17:37:35.114 |       indicators.", "row_count": 260}, {"table_name": "d_match_scores",         
+2026-06-07 17:37:35.114 |       "description": "One row per match checkpoint records the final or halftime
+2026-06-07 17:37:35.114 |       score between two teams, including the match identifier, tournament stage,
+2026-06-07 17:37:35.114 |       competing team IDs, goals scored, and the time the score was captured.",  
+2026-06-07 17:37:35.114 |       "row_count": 206}, {"table_name": "d_raw_events", "description": null,    
+2026-06-07 17:37:35.114 |       "row_count": 1002}, {"table_name": "d_segment_cards", "description": null,
+2026-06-07 17:37:35.114 |       "row_count": 199}, {"table_name": "d_segment_goals", "description": null, 
+2026-06-07 17:37:35.114 |       "row_count": 151}, {"table_name": "d_segment_penalties", "description":   
+2026-06-07 17:37:35.114 |       null, "row_count": 21}, {"table_name": "d_segment_subs", "description":   
+2026-06-07 17:37:35.114 |       null, "row_count": 572}, {"table_name": "dim_checkpoint", "description":  
+2026-06-07 17:37:35.114 |       "One row per checkpoint in a match timeline, containing the checkpoint    
+2026-06-07 17:37:35.114 |       code, name, sequence order, triggering minute, whether it applies only in 
+2026-06-07 17:37:35.114 |       overtime, and associated playbook categories.", "row_count": 4},          
+2026-06-07 17:37:35.114 |       {"table_name": "dim_match", "description": "Dimension table storing one   
+2026-06-07 17:37:35.114 |       row per football match, containing identifiers, kickoff time in UTC,      
+2026-06-07 17:37:35.114 |       associated competition details, tournament stage classification, and      
+2026-06-07 17:37:35.114 |       knockout indicator.", "row_count": 65}, {"table_name": "sm_match_meta",   
+2026-06-07 17:37:35.114 |       "description": null, "row_count": null}, {"table_name":                   
+2026-06-07 17:37:35.115 |       "sm_statistics_snapshot", "description": null, "row_count": 260}],        
+2026-06-07 17:37:35.115 |       "tables": {"ads_a_country_style": [{"country_id": 147, "set_piece_shots": 
+2026-06-07 17:37:35.115 |       94, "set_piece_goals": 2, "conversion_rate": 0.0212765957446809,          
+2026-06-07 17:37:35.115 |       "group_matches": 9, "group_goals_against": 8, "ko_matches": 1,            
+2026-06-07 17:37:35.115 |       "ko_goals_against": 2, "group_gpg": 0.888888888888889, "ko_gpg": 2},      
+2026-06-07 17:37:35.115 |       {"country_id": 211, "set_piece_shots": 26, "set_piece_goals": 2,          
+2026-06-07 17:37:35.115 |       "conversion_rate": 0.0769230769230769, "group_matches": 6,                
+2026-06-07 17:37:35.115 |       "group_goals_against": 14, "ko_matches": 1, "ko_goals_against": 2,        
+2026-06-07 17:37:35.115 |       "group_gpg": 2.33333333333333, "ko_gpg": 2}], "ads_a_country_struct":     
+2026-06-07 17:37:35.115 |       [{"country_id": 147, "last_final_date": null, "years_since_final": null}, 
+2026-06-07 17:37:35.115 |       {"country_id": 211, "last_final_date": null, "years_since_final": null}], 
+2026-06-07 17:37:35.115 |       "ads_a_ko_pattern": [{"country_id": 147, "tournaments_reached_ko": 1,     
+2026-06-07 17:37:35.115 |       "first_ko_wins": 0, "first_ko_losses": 1, "first_ko_loss_rate": 1,        
+2026-06-07 17:37:35.115 |       "modal_exit_stage": "group", "modal_exit_count": 2}, {"country_id": 211,  
+2026-06-07 17:37:35.115 |       "tournaments_reached_ko": 1, "first_ko_wins": 0, "first_ko_losses": 1,    
+2026-06-07 17:37:35.115 |       "first_ko_loss_rate": 1, "modal_exit_stage": "group", "modal_exit_count": 
+2026-06-07 17:37:35.115 |       1}], "ads_a_special_match": [{"country_id": 211, "et_matches": 3,         
+2026-06-07 17:37:35.115 |       "et_wins": 0, "et_draws": 3, "et_losses": 0, "et_win_rate": 0,            
+2026-06-07 17:37:35.115 |       "pen_shootouts": 3, "pen_wins": 0, "pen_losses": 0, "pen_win_rate": 0}],  
+2026-06-07 17:37:35.115 |       "ads_a_stage_record": [{"country_id": 147, "stage_canonical": "group",    
+2026-06-07 17:37:35.115 |       "matches": 9, "wins": 4, "draws": 2, "losses": 3, "win_rate":             
+2026-06-07 17:37:35.115 |       0.444444444444444}, {"country_id": 147, "stage_canonical": "r16",         
+2026-06-07 17:37:35.115 |       "matches": 1, "wins": 0, "draws": 0, "losses": 1, "win_rate": 0},         
+2026-06-07 17:37:35.115 |       {"country_id": 211, "stage_canonical": "group", "matches": 6, "wins": 1,  
+2026-06-07 17:37:35.115 |       "draws": 1, "losses": 4, "win_rate": 0.166666666666667}, {"country_id":   
+2026-06-07 17:37:35.115 |       211, "stage_canonical": "r16", "matches": 1, "wins": 0, "draws": 0,       
+2026-06-07 17:37:35.115 |       "losses": 1, "win_rate": 0}], "ads_a_h2h_country": [], "sm_match_meta":   
+2026-06-07 17:37:35.115 |       [], "sm_statistics_snapshot": [], "dim_match_lookup": []},                
+2026-06-07 17:37:35.115 |       "supabase_join_note": "Historical ads_a_* tables use arena country IDs.   
+2026-06-07 17:37:35.115 |       Sportmonks participant country_id is kept as metadata but is not always   
+2026-06-07 17:37:35.115 |       the correct Supabase join key.", "features": {"country_ids": {"home": 147,
+2026-06-07 17:37:35.115 |       "away": 211, "home_source": "config_alias", "away_source": "config_alias",
+2026-06-07 17:37:35.115 |       "home_sportmonks_country_id": 458, "away_sportmonks_country_id": 146},    
+2026-06-07 17:37:35.115 |       "style": {"set_piece_conversion_rate": {"home": 0.0212765957446809,       
+2026-06-07 17:37:35.115 |       "away": 0.0769230769230769}, "group_goals_conceded_per_game": {"home":    
+2026-06-07 17:37:35.115 |       0.888888888888889, "away": 2.33333333333333},                             
+2026-06-07 17:37:35.115 |       "knockout_goals_conceded_per_game": {"home": 2, "away": 2}},              
+2026-06-07 17:37:35.115 |       "stage_record": {"group_win_rate": {"home": 0.444444444444444, "away":    
+2026-06-07 17:37:35.115 |       0.166666666666667}, "group_matches": {"home": 9, "away": 6}},             
+2026-06-07 17:37:35.115 |       "knockout_pattern": {"first_ko_loss_rate": {"home": 1, "away": 1},        
+2026-06-07 17:37:35.115 |       "modal_exit_stage": {"home": "group", "away": "group"}}, "special_match": 
+2026-06-07 17:37:35.115 |       {"extra_time_win_rate": {"home": null, "away": 0}, "penalty_win_rate":    
+2026-06-07 17:37:35.115 |       {"home": null, "away": 0}}, "h2h": {"row_count": 0, "rows": []},          
+2026-06-07 17:37:35.115 |       "data_quality": {"style_rows": 2, "stage_rows": 4, "ko_rows": 2,          
+2026-06-07 17:37:35.115 |       "special_rows": 1, "h2h_rows": 0}}, "statsbomb_open_data": {"available":  
+2026-06-07 17:37:35.115 |       false, "source_dir": "/data/statsbomb-open-data/data", "setup": "Clone    
+2026-06-07 17:37:35.115 |       https://github.com/statsbomb/open-data.git into data/statsbomb-open-data, 
+2026-06-07 17:37:35.115 |       or set STATSBOMB_OPEN_DATA_DIR to its data directory.", "id_warning":     
+2026-06-07 17:37:35.115 |       "StatsBomb open data uses its own team names and match IDs. Do not join it
+2026-06-07 17:37:35.115 |       to Sportmonks or Supabase by numeric country_id."}}                       
+2026-06-07 17:37:35.115 |                                                                                 
+2026-06-07 17:37:35.115 | DEBUG Creating new sync OpenAI client for model deepseek/deepseek-v4-flash      
+2026-06-07 17:37:44.835 | DEBUG ======================== assistant =========================              
+2026-06-07 17:37:44.845 | DEBUG {                                                                         
+2026-06-07 17:37:44.845 |         "source": "supabase",                                                   
+2026-06-07 17:37:44.845 |         "home_country": "Mexico",                                               
+2026-06-07 17:37:44.845 |         "away_country": "South Africa",                                         
+2026-06-07 17:37:44.845 |         "available_tables": ["ads_a_country_struct", "ads_a_country_style",     
+2026-06-07 17:37:44.845 |       "ads_a_h2h_continent", "ads_a_h2h_country", "ads_a_ko_pattern",           
+2026-06-07 17:37:44.845 |       "ads_a_manager", "ads_a_special_match", "ads_a_stage_record",             
+2026-06-07 17:37:44.845 |       "d_checkpoint_minutes", "d_checkpoint_runs", "d_checkpoint_snapshot",     
+2026-06-07 17:37:44.845 |       "d_match_scores", "d_raw_events", "d_segment_cards", "d_segment_goals",   
+2026-06-07 17:37:44.845 |       "d_segment_penalties", "d_segment_subs", "dim_checkpoint", "dim_match",   
+2026-06-07 17:37:44.845 |       "sm_match_meta", "sm_statistics_snapshot"],                               
+2026-06-07 17:37:44.845 |         "historical_signals": [                                                 
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "set_piece_conversion_rate",                              
+2026-06-07 17:37:44.845 |             "home_value": 0.0213,                                               
+2026-06-07 17:37:44.845 |             "away_value": 0.0769,                                               
+2026-06-07 17:37:44.845 |             "interpretation": "South Africa converts set pieces at 3.6x the rate
+2026-06-07 17:37:44.845 |       of Mexico, suggesting a potential advantage in dead-ball situations."     
+2026-06-07 17:37:44.845 |           },                                                                    
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "group_stage_goals_conceded_per_game",                    
+2026-06-07 17:37:44.845 |             "home_value": 0.8889,                                               
+2026-06-07 17:37:44.845 |             "away_value": 2.3333,                                               
+2026-06-07 17:37:44.845 |             "interpretation": "Mexico concedes far fewer goals per group match  
+2026-06-07 17:37:44.845 |       (0.89 vs 2.33), indicating stronger defensive organization in the group   
+2026-06-07 17:37:44.845 |       phase."                                                                   
+2026-06-07 17:37:44.845 |           },                                                                    
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "knockout_goals_conceded_per_game",                       
+2026-06-07 17:37:44.845 |             "home_value": 2,                                                    
+2026-06-07 17:37:44.845 |             "away_value": 2,                                                    
+2026-06-07 17:37:44.845 |             "interpretation": "Both teams concede 2 goals per knockout match,   
+2026-06-07 17:37:44.845 |       but sample sizes are very small (1 match each)."                          
+2026-06-07 17:37:44.845 |           },                                                                    
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "group_stage_win_rate",                                   
+2026-06-07 17:37:44.845 |             "home_value": 0.4444,                                               
+2026-06-07 17:37:44.845 |             "away_value": 0.1667,                                               
+2026-06-07 17:37:44.845 |             "interpretation": "Mexico wins 44% of group matches vs South        
+2026-06-07 17:37:44.845 |       Africa's 17%, showing a clear advantage in the group phase."              
+2026-06-07 17:37:44.845 |           },                                                                    
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "first_knockout_loss_rate",                               
+2026-06-07 17:37:44.845 |             "home_value": 1,                                                    
+2026-06-07 17:37:44.845 |             "away_value": 1,                                                    
+2026-06-07 17:37:44.845 |             "interpretation": "Both teams have lost their only knockout match,  
+2026-06-07 17:37:44.845 |       indicating difficulty advancing past the first knockout round."           
+2026-06-07 17:37:44.845 |           },                                                                    
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "modal_exit_stage",                                       
+2026-06-07 17:37:44.845 |             "home_value": "group",                                              
+2026-06-07 17:37:44.845 |             "away_value": "group",                                              
+2026-06-07 17:37:44.845 |             "interpretation": "Both teams most commonly exit in the group stage,
+2026-06-07 17:37:44.845 |       suggesting neither is a consistent knockout contender."                   
+2026-06-07 17:37:44.845 |           },                                                                    
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "extra_time_win_rate",                                    
+2026-06-07 17:37:44.845 |             "home_value": null,                                                 
+2026-06-07 17:37:44.845 |             "away_value": 0,                                                    
+2026-06-07 17:37:44.845 |             "interpretation": "No extra-time data for Mexico; South Africa has 0
+2026-06-07 17:37:44.845 |       wins in 3 extra-time matches (all draws)."                                
+2026-06-07 17:37:44.845 |           },                                                                    
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "penalty_shootout_win_rate",                              
+2026-06-07 17:37:44.845 |             "home_value": null,                                                 
+2026-06-07 17:37:44.845 |             "away_value": 0,                                                    
+2026-06-07 17:37:44.845 |             "interpretation": "No penalty shootout data for Mexico; South Africa
+2026-06-07 17:37:44.845 |       has 0 wins in 3 shootouts."                                               
+2026-06-07 17:37:44.845 |           },                                                                    
+2026-06-07 17:37:44.845 |           {                                                                     
+2026-06-07 17:37:44.845 |             "signal": "last_final_appearance",                                  
+2026-06-07 17:37:44.845 |             "home_value": null,                                                 
+2026-06-07 17:37:44.845 |             "away_value": null,                                                 
+2026-06-07 17:37:44.845 |             "interpretation": "Neither team has reached a major tournament final
+2026-06-07 17:37:44.845 |       since 2000."                                                              
+2026-06-07 17:37:44.845 |           }                                                                     
+2026-06-07 17:37:44.845 |         ],                                                                      
+2026-06-07 17:37:44.845 |         "h2h_summary": null,                                                    
+2026-06-07 17:37:44.845 |         "confidence": "medium",                                                 
+2026-06-07 17:37:44.845 |         "data_gaps": [                                                          
+2026-06-07 17:37:44.845 |           "No head-to-head matches found in Supabase between Mexico and South   
+2026-06-07 17:37:44.845 |       Africa.",                                                                 
+2026-06-07 17:37:44.845 |           "No extra-time or penalty shootout data available for Mexico.",       
+2026-06-07 17:37:44.845 |           "Knockout stage data is based on very small samples (1 match each).", 
+2026-06-07 17:37:44.845 |           "StatsBomb open data is not available as a fallback.",                
+2026-06-07 17:37:44.845 |           "No manager data was retrieved for either team."                      
+2026-06-07 17:37:44.845 |         ],                                                                      
+2026-06-07 17:37:44.845 |         "summary": "Mexico and South Africa have never met in a major tournament
+2026-06-07 17:37:44.845 |       according to Supabase records. Mexico shows stronger group-stage          
+2026-06-07 17:37:44.845 |       performance (44% win rate, 0.89 goals conceded per game) compared to South
+2026-06-07 17:37:44.845 |       Africa (17% win rate, 2.33 goals conceded per game). South Africa has a   
+2026-06-07 17:37:44.845 |       notable edge in set-piece conversion (7.7% vs 2.1%). Both teams have      
+2026-06-07 17:37:44.845 |       limited knockout experience, each losing their only knockout match and    
+2026-06-07 17:37:44.845 |       most commonly exiting in the group stage. Neither has reached a final     
+2026-06-07 17:37:44.845 |       since 2000. The absence of direct head-to-head data and small sample sizes
+2026-06-07 17:37:44.845 |       for knockout and special-match scenarios reduce confidence."              
+2026-06-07 17:37:44.845 |       }                                                                         
+2026-06-07 17:37:44.845 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:37:44.847 | DEBUG * Tokens:                      input=2648, output=986, total=3634         
+2026-06-07 17:37:44.849 | DEBUG * Duration:                    9.7196s                                    
+2026-06-07 17:37:44.852 | DEBUG * Tokens per second:           101.4450 tokens/s                          
+2026-06-07 17:37:44.853 | DEBUG * Time to first token:         9.7196s                                    
+2026-06-07 17:37:44.854 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:37:44.855 | DEBUG --------------- OpenRouter Chat Response End ---------------              
+2026-06-07 17:37:44.857 | DEBUG Added RunOutput to Agent Session                                          
+2026-06-07 17:37:44.928 | DEBUG Created or updated AgentSession record: prematch:19609127:20260607T120628Z
+2026-06-07 17:37:44.929 | DEBUG *** Agent Run End: 14d83d08-38d3-4201-bd5c-2163c71425c7 ****              
+2026-06-07 17:38:04.465 | DEBUG ****** Session ID: prematch:19609127:20260607T120628Z ******              
+2026-06-07 17:38:04.466 | DEBUG **************** Agent ID: prediction-agent ****************              
+2026-06-07 17:38:04.467 | DEBUG Reading AgentSession: prematch:19609127:20260607T120628Z                  
+2026-06-07 17:38:04.487 | DEBUG ** Agent Run Start: 2415f81c-d39a-4596-8628-38e7aca3472a ***              
+2026-06-07 17:38:04.488 | DEBUG -------------- OpenRouter Chat Response Start --------------              
+2026-06-07 17:38:04.489 | DEBUG ------------ Model: deepseek/deepseek-v4-flash -------------              
+2026-06-07 17:38:04.491 | DEBUG ========================== system ==========================              
+2026-06-07 17:38:04.492 | DEBUG Make an independent match prediction from football and historical signals 
+2026-06-07 17:38:04.492 |       only.                                                                     
+2026-06-07 17:38:04.492 |       - Return only valid JSON.                                                 
+2026-06-07 17:38:04.492 |       - Do not wrap the JSON in markdown fences.                                
+2026-06-07 17:38:04.492 |       - Use null when a value is unavailable.                                   
+2026-06-07 17:38:04.492 |       - Be explicit about data gaps and confidence.                             
+2026-06-07 17:38:04.493 | DEBUG =========================== user ===========================              
+2026-06-07 17:38:04.504 | DEBUG                                                                           
+2026-06-07 17:38:04.504 |       Make an independent football prediction. Do not use Polymarket market     
+2026-06-07 17:38:04.504 |       prices.                                                                   
+2026-06-07 17:38:04.504 |                                                                                 
+2026-06-07 17:38:04.504 |       Important modeling rule:                                                  
+2026-06-07 17:38:04.504 |       - Do not rely on Sportmonks ML probabilities as the primary basis for the 
+2026-06-07 17:38:04.504 |       prediction.                                                               
+2026-06-07 17:38:04.504 |       - Treat Sportmonks ML as a weak baseline/calibration signal only.         
+2026-06-07 17:38:04.504 |       - If expected goals, recent form, lineup/news, H2H, standings, and        
+2026-06-07 17:38:04.504 |       Supabase historical priors are missing, confidence must be "low" and the  
+2026-06-07 17:38:04.504 |       rationale must say the prediction is not trade-grade.                     
+2026-06-07 17:38:04.504 |       - Do not create high-conviction probabilities from ML output alone.       
+2026-06-07 17:38:04.504 |                                                                                 
+2026-06-07 17:38:04.504 |       Return this schema:                                                       
+2026-06-07 17:38:04.504 |       {                                                                         
+2026-06-07 17:38:04.504 |         "fixture": str,                                                         
+2026-06-07 17:38:04.504 |         "outcome": str,                                                         
+2026-06-07 17:38:04.504 |         "probability": float,                                                   
+2026-06-07 17:38:04.504 |         "probabilities": {"home": float, "draw": float, "away": float},         
+2026-06-07 17:38:04.504 |         "evidence_basis":                                                       
+2026-06-07 17:38:04.504 |       "non_ml_supported"|"mixed"|"ml_primary"|"insufficient",                   
+2026-06-07 17:38:04.504 |         "trade_grade": bool,                                                    
+2026-06-07 17:38:04.504 |         "confidence_level": "low"|"medium"|"high",                              
+2026-06-07 17:38:04.504 |         "rationale": str,                                                       
+2026-06-07 17:38:04.504 |         "key_factors": [str],                                                   
+2026-06-07 17:38:04.504 |         "data_gaps": [str]                                                      
+2026-06-07 17:38:04.504 |       }                                                                         
+2026-06-07 17:38:04.504 |                                                                                 
+2026-06-07 17:38:04.504 |       Sportmonks digest:                                                        
+2026-06-07 17:38:04.504 |       {'raw_response': '{\n  "source": "sportmonks",\n  "fixture": "Mexico vs   
+2026-06-07 17:38:04.504 |       South Africa",\n  "fixture_id": 19609127,\n  "home_team": "Mexico",\n     
+2026-06-07 17:38:04.505 |       "away_team": "South Africa",\n  "home_code": "MEX",\n  "away_code":       
+2026-06-07 17:38:04.505 |       "ZAF",\n  "available_signals": [\n    "fulltime_result_probability",\n    
+2026-06-07 17:38:04.505 |       "bookmaker_consensus",\n    "factual_context",\n    "lineups",\n          
+2026-06-07 17:38:04.505 |       "sidelined",\n    "ml_predictions"\n  ],\n  "probabilities": {\n    "MEX":
+2026-06-07 17:38:04.505 |       0.4081,\n'}                                                               
+2026-06-07 17:38:04.505 |                                                                                 
+2026-06-07 17:38:04.505 |       Supabase digest:                                                          
+2026-06-07 17:38:04.505 |       {'source': 'supabase', 'home_country': 'Mexico', 'away_country': 'South   
+2026-06-07 17:38:04.505 |       Africa', 'available_tables': ['ads_a_country_struct',                     
+2026-06-07 17:38:04.505 |       'ads_a_country_style', 'ads_a_h2h_continent', 'ads_a_h2h_country',        
+2026-06-07 17:38:04.505 |       'ads_a_ko_pattern', 'ads_a_manager', 'ads_a_special_match',               
+2026-06-07 17:38:04.505 |       'ads_a_stage_record', 'd_checkpoint_minutes', 'd_checkpoint_runs',        
+2026-06-07 17:38:04.505 |       'd_checkpoint_snapshot', 'd_match_scores', 'd_raw_events',                
+2026-06-07 17:38:04.505 |       'd_segment_cards', 'd_segment_goals', 'd_segment_penalties',              
+2026-06-07 17:38:04.505 |       'd_segment_subs', 'dim_checkpoint', 'dim_match', 'sm_match_meta',         
+2026-06-07 17:38:04.505 |       'sm_statistics_snapshot'], 'historical_signals': [{'signal':              
+2026-06-07 17:38:04.505 |       'set_piece_conversion_rate', 'home_value': 0.0213, 'away_value': 0.0769,  
+2026-06-07 17:38:04.505 |       'interpretation': 'South Africa converts set pieces at 3.6x the rate of   
+2026-06-07 17:38:04.505 |       Mexico, suggesting a potential advantage in dead-ball situations.'},      
+2026-06-07 17:38:04.505 |       {'signal': 'group_stage_goals_conceded_per_game', 'home_value': 0.8889,   
+2026-06-07 17:38:04.505 |       'away_value': 2.3333, 'interpretation': 'Mexico concedes far fewer goals  
+2026-06-07 17:38:04.505 |       per group match (0.89 vs 2.33), indicating stronger defensive organization
+2026-06-07 17:38:04.505 |       in the group phase.'}, {'signal': 'knockout_goals_conceded_per_game',     
+2026-06-07 17:38:04.505 |       'home_value': 2, 'away_value': 2, 'interpretation': 'Both teams concede 2 
+2026-06-07 17:38:04.505 |       goals per knockout match, but sample sizes are very small (1 match        
+2026-06-07 17:38:04.505 |       each).'}, {'signal': 'group_stage_win_rate', 'home_value': 0.4444,        
+2026-06-07 17:38:04.505 |       'away_value': 0.1667, 'interpretation': "Mexico wins 44% of group matches 
+2026-06-07 17:38:04.505 |       vs South Africa's 17%, showing a clear advantage in the group phase."},   
+2026-06-07 17:38:04.505 |       {'signal': 'first_knockout_loss_rate', 'home_value': 1, 'away_value': 1,  
+2026-06-07 17:38:04.505 |       'interpretation': 'Both teams have lost their only knockout match,        
+2026-06-07 17:38:04.505 |       indicating difficulty advancing past the first knockout round.'},         
+2026-06-07 17:38:04.505 |       {'signal': 'modal_exit_stage', 'home_value': 'group', 'away_value':       
+2026-06-07 17:38:04.505 |       'group', 'interpretation': 'Both teams most commonly exit in the group    
+2026-06-07 17:38:04.505 |       stage, suggesting neither is a consistent knockout contender.'},          
+2026-06-07 17:38:04.505 |       {'signal': 'extra_time_win_rate', 'home_value': None, 'away_value': 0,    
+2026-06-07 17:38:04.505 |       'interpretation': 'No extra-time data for Mexico; South Africa has 0 wins 
+2026-06-07 17:38:04.505 |       in 3 extra-time matches (all draws).'}, {'signal':                        
+2026-06-07 17:38:04.505 |       'penalty_shootout_win_rate', 'home_value': None, 'away_value': 0,         
+2026-06-07 17:38:04.505 |       'interpretation': 'No penalty shootout data for Mexico; South Africa has 0
+2026-06-07 17:38:04.505 |       wins in 3 shootouts.'}, {'signal': 'last_final_appearance', 'home_value': 
+2026-06-07 17:38:04.505 |       None, 'away_value': None, 'interpretation': 'Neither team has reached a   
+2026-06-07 17:38:04.505 |       major tournament final since 2000.'}], 'h2h_summary': None, 'confidence': 
+2026-06-07 17:38:04.505 |       'medium', 'data_gaps': ['No head-to-head matches found in Supabase between
+2026-06-07 17:38:04.505 |       Mexico and South Africa.', 'No extra-time or penalty shootout data        
+2026-06-07 17:38:04.505 |       available for Mexico.', 'Knockout stage data is based on very small       
+2026-06-07 17:38:04.505 |       samples (1 match each).', 'StatsBomb open data is not available as a      
+2026-06-07 17:38:04.505 |       fallback.', 'No manager data was retrieved for either team.'], 'summary': 
+2026-06-07 17:38:04.505 |       'Mexico and South Africa have never met in a major tournament according to
+2026-06-07 17:38:04.505 |       Supabase records. Mexico shows stronger group-stage performance (44% win  
+2026-06-07 17:38:04.505 |       rate, 0.89 goals conceded per game) compared to South Africa (17% win     
+2026-06-07 17:38:04.505 |       rate, 2.33 goals conceded per game). South Africa has a notable edge in   
+2026-06-07 17:38:04.505 |       set-piece conversion (7.7% vs 2.1%). Both teams have limited knockout     
+2026-06-07 17:38:04.505 |       experience, each losing their only knockout match and most commonly       
+2026-06-07 17:38:04.505 |       exiting in the group stage. Neither has reached a final since 2000. The   
+2026-06-07 17:38:04.505 |       absence of direct head-to-head data and small sample sizes for knockout   
+2026-06-07 17:38:04.505 |       and special-match scenarios reduce confidence.'}                          
+2026-06-07 17:38:04.505 |                                                                                 
+2026-06-07 17:38:04.506 | DEBUG Creating new sync OpenAI client for model deepseek/deepseek-v4-flash      
+2026-06-07 17:38:16.156 | DEBUG ======================== assistant =========================              
+2026-06-07 17:38:16.166 | DEBUG {                                                                         
+2026-06-07 17:38:16.166 |         "fixture": "Mexico vs South Africa",                                    
+2026-06-07 17:38:16.166 |         "outcome": "Mexico Win",                                                
+2026-06-07 17:38:16.166 |         "probability": 0.44,                                                    
+2026-06-07 17:38:16.166 |         "probabilities": {"home": 0.44, "draw": 0.30, "away": 0.26},            
+2026-06-07 17:38:16.166 |         "evidence_basis": "insufficient",                                       
+2026-06-07 17:38:16.166 |         "trade_grade": false,                                                   
+2026-06-07 17:38:16.166 |         "confidence_level": "low",                                              
+2026-06-07 17:38:16.166 |         "rationale": "Prediction is not trade-grade. No head-to-head data       
+2026-06-07 17:38:16.166 |       exists. Mexico's higher group-stage win rate (44% vs 17%) and lower goals 
+2026-06-07 17:38:16.166 |       conceded per game (0.89 vs 2.33) suggest an advantage, but knockout data  
+2026-06-07 17:38:16.166 |       is extremely limited (1 match each). South Africa's superior set-piece    
+2026-06-07 17:38:16.166 |       conversion is notable but offset by overall defensive weakness. The       
+2026-06-07 17:38:16.166 |       Sportmonks ML probability (40.8% for Mexico) is used only as a weak       
+2026-06-07 17:38:16.166 |       calibration, not as primary evidence. Key data gaps (no H2H, small        
+2026-06-07 17:38:16.166 |       knockout samples, no extra-time/penalty records for Mexico) prevent       
+2026-06-07 17:38:16.166 |       reliable modeling.",                                                      
+2026-06-07 17:38:16.166 |         "key_factors": [                                                        
+2026-06-07 17:38:16.166 |           "Mexico group-stage win rate: 44% (favorable)",                       
+2026-06-07 17:38:16.166 |           "Mexico group-stage goals conceded per game: 0.89 (strong defense)",  
+2026-06-07 17:38:16.166 |           "South Africa group-stage win rate: 17% (weak)",                      
+2026-06-07 17:38:16.166 |           "South Africa group-stage goals conceded per game: 2.33 (porous       
+2026-06-07 17:38:16.166 |       defense)",                                                                
+2026-06-07 17:38:16.166 |           "South Africa set-piece conversion rate 3.6x Mexico's (nuanced        
+2026-06-07 17:38:16.166 |       advantage)",                                                              
+2026-06-07 17:38:16.166 |           "Both teams most commonly exit in group stage",                       
+2026-06-07 17:38:16.166 |           "No head-to-head history available"                                   
+2026-06-07 17:38:16.166 |         ],                                                                      
+2026-06-07 17:38:16.166 |         "data_gaps": [                                                          
+2026-06-07 17:38:16.166 |           "No head-to-head matches between Mexico and South Africa in Supabase",
+2026-06-07 17:38:16.166 |           "Knockout data based on 1 match per team, sample too small",          
+2026-06-07 17:38:16.166 |           "No extra-time or penalty shootout data for Mexico",                  
+2026-06-07 17:38:16.166 |           "No manager data available for either team",                          
+2026-06-07 17:38:16.166 |           "StatsBomb open data not available as fallback"                       
+2026-06-07 17:38:16.166 |         ]                                                                       
+2026-06-07 17:38:16.166 |       }                                                                         
+2026-06-07 17:38:16.169 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:38:16.170 | DEBUG * Tokens:                      input=1372, output=418, total=1790         
+2026-06-07 17:38:16.171 | DEBUG * Duration:                    11.6504s                                   
+2026-06-07 17:38:16.172 | DEBUG * Tokens per second:           35.8786 tokens/s                           
+2026-06-07 17:38:16.173 | DEBUG * Time to first token:         11.6504s                                   
+2026-06-07 17:38:16.174 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:38:16.175 | DEBUG --------------- OpenRouter Chat Response End ---------------              
+2026-06-07 17:38:16.176 | DEBUG Added RunOutput to Agent Session                                          
+2026-06-07 17:38:16.269 | DEBUG Created or updated AgentSession record: prematch:19609127:20260607T120628Z
+2026-06-07 17:38:16.270 | DEBUG *** Agent Run End: 2415f81c-d39a-4596-8628-38e7aca3472a ****              
+2026-06-07 17:38:27.279 | DEBUG ****** Session ID: prematch:19609127:20260607T120628Z ******              
+2026-06-07 17:38:27.280 | DEBUG ***************** Agent ID: strategy-agent *****************              
+2026-06-07 17:38:27.281 | DEBUG Reading AgentSession: prematch:19609127:20260607T120628Z                  
+2026-06-07 17:38:27.302 | DEBUG ** Agent Run Start: 1dd316af-d335-4054-923d-5baa5dba20a8 ***              
+2026-06-07 17:38:27.303 | DEBUG -------------- OpenRouter Chat Response Start --------------              
+2026-06-07 17:38:27.304 | DEBUG ------------ Model: deepseek/deepseek-v4-flash -------------              
+2026-06-07 17:38:27.306 | DEBUG ========================== system ==========================              
+2026-06-07 17:38:27.308 | DEBUG Compare an independent prediction to market prices and decide trade or    
+2026-06-07 17:38:27.308 |       no-trade.                                                                 
+2026-06-07 17:38:27.308 |       - Return only valid JSON.                                                 
+2026-06-07 17:38:27.308 |       - Do not wrap the JSON in markdown fences.                                
+2026-06-07 17:38:27.308 |       - Use null when a value is unavailable.                                   
+2026-06-07 17:38:27.308 |       - Be explicit about data gaps and confidence.                             
+2026-06-07 17:38:27.310 | DEBUG =========================== user ===========================              
+2026-06-07 17:38:27.333 | DEBUG                                                                           
+2026-06-07 17:38:27.333 |       Decide whether to trade using a conservative $100 demo bankroll.          
+2026-06-07 17:38:27.333 |                                                                                 
+2026-06-07 17:38:27.333 |       Rules:                                                                    
+2026-06-07 17:38:27.333 |       - Evaluate every listed outcome, not only the most likely predicted       
+2026-06-07 17:38:27.333 |       outcome.                                                                  
+2026-06-07 17:38:27.333 |       - Edge = prediction probability for that outcome minus Polymarket implied 
+2026-06-07 17:38:27.333 |       probability for the same outcome.                                         
+2026-06-07 17:38:27.333 |       - Positive edge means the outcome's YES market appears underpriced and can
+2026-06-07 17:38:27.333 |       be bought.                                                                
+2026-06-07 17:38:27.333 |       - Negative edge means that specific YES market appears overpriced; do not 
+2026-06-07 17:38:27.333 |       buy that YES market.                                                      
+2026-06-07 17:38:27.333 |       - If no outcome has positive edge of at least 5 percentage points, do not 
+2026-06-07 17:38:27.333 |       trade.                                                                    
+2026-06-07 17:38:27.333 |       - Maximum trade size is $5.                                               
+2026-06-07 17:38:27.333 |       - Stair arena orders are submitted as buy-YES orders using                
+2026-06-07 17:38:27.333 |       fixture_code/team_code. Therefore, when one outcome is overpriced, express
+2026-06-07 17:38:27.333 |       the fade by buying YES on the underpriced alternative outcome with the    
+2026-06-07 17:38:27.333 |       best positive edge when one exists.                                       
+2026-06-07 17:38:27.333 |       - You may discuss a short/fade thesis in the rationale, but if            
+2026-06-07 17:38:27.333 |       should_trade=true the executable order must be direction="long", team_code
+2026-06-07 17:38:27.333 |       must be the outcome to buy YES on, and limit_price must be near that      
+2026-06-07 17:38:27.333 |       outcome's YES mid.                                                        
+2026-06-07 17:38:27.333 |       - limit_price should be near but not wildly above the market mid for the  
+2026-06-07 17:38:27.333 |       selected YES token.                                                       
+2026-06-07 17:38:27.333 |       - If should_trade=false, direction must be "none", size_usdc must be "0", 
+2026-06-07 17:38:27.333 |       limit_price must be null, and team_code must be null.                     
+2026-06-07 17:38:27.333 |       - If should_trade=true, direction must be "long", team_code must be one of
+2026-06-07 17:38:27.333 |       the available outcome codes, size_usdc must be 1.00 to 5.00, and          
+2026-06-07 17:38:27.333 |       limit_price must be a number.                                             
+2026-06-07 17:38:27.333 |       - Prefer the provided `best_buy_yes` candidate when it exists, unless you 
+2026-06-07 17:38:27.333 |       can justify a more conservative no-trade due to low confidence or missing 
+2026-06-07 17:38:27.333 |       pricing.                                                                  
+2026-06-07 17:38:27.333 |       - Read `ml_prediction_risk` carefully. Sportmonks ML probabilities are    
+2026-06-07 17:38:27.333 |       public, usually weak for home/draw/away prediction, and can manipulate    
+2026-06-07 17:38:27.333 |       both humans and AI agents into overconfident analysis.                    
+2026-06-07 17:38:27.333 |       - Do not let an edge that comes primarily from Sportmonks ML probabilities
+2026-06-07 17:38:27.333 |       override missing factual evidence. You may still decide to trade, but the 
+2026-06-07 17:38:27.333 |       rationale must explicitly explain the factual, non-ML evidence supporting 
+2026-06-07 17:38:27.333 |       that decision.                                                            
+2026-06-07 17:38:27.333 |                                                                                 
+2026-06-07 17:38:27.333 |       Return this schema:                                                       
+2026-06-07 17:38:27.333 |       {                                                                         
+2026-06-07 17:38:27.333 |         "should_trade": bool,                                                   
+2026-06-07 17:38:27.333 |         "outcome": str,                                                         
+2026-06-07 17:38:27.333 |         "team_code": str|null,                                                  
+2026-06-07 17:38:27.333 |         "direction": "long"|"short"|"none",                                     
+2026-06-07 17:38:27.333 |         "size_usdc": str,                                                       
+2026-06-07 17:38:27.333 |         "limit_price": float|null,                                              
+2026-06-07 17:38:27.333 |         "edge_pp": float|null,                                                  
+2026-06-07 17:38:27.333 |         "confidence": "low"|"medium"|"high",                                    
+2026-06-07 17:38:27.333 |         "rationale": str                                                        
+2026-06-07 17:38:27.333 |       }                                                                         
+2026-06-07 17:38:27.333 |                                                                                 
+2026-06-07 17:38:27.333 |       Strategy context:                                                         
+2026-06-07 17:38:27.333 |       {'prediction': {'fixture': 'Mexico vs South Africa', 'outcome': 'Mexico   
+2026-06-07 17:38:27.333 |       Win', 'probability': 0.44, 'probabilities': {'home': 0.44, 'draw': 0.3,   
+2026-06-07 17:38:27.333 |       'away': 0.26}, 'evidence_basis': 'insufficient', 'trade_grade': False,    
+2026-06-07 17:38:27.333 |       'confidence_level': 'low', 'rationale': "Prediction is not trade-grade. No
+2026-06-07 17:38:27.333 |       head-to-head data exists. Mexico's higher group-stage win rate (44% vs    
+2026-06-07 17:38:27.333 |       17%) and lower goals conceded per game (0.89 vs 2.33) suggest an          
+2026-06-07 17:38:27.333 |       advantage, but knockout data is extremely limited (1 match each). South   
+2026-06-07 17:38:27.333 |       Africa's superior set-piece conversion is notable but offset by overall   
+2026-06-07 17:38:27.333 |       defensive weakness. The Sportmonks ML probability (40.8% for Mexico) is   
+2026-06-07 17:38:27.333 |       used only as a weak calibration, not as primary evidence. Key data gaps   
+2026-06-07 17:38:27.333 |       (no H2H, small knockout samples, no extra-time/penalty records for Mexico)
+2026-06-07 17:38:27.333 |       prevent reliable modeling.", 'key_factors': ['Mexico group-stage win rate:
+2026-06-07 17:38:27.333 |       44% (favorable)', 'Mexico group-stage goals conceded per game: 0.89       
+2026-06-07 17:38:27.333 |       (strong defense)', 'South Africa group-stage win rate: 17% (weak)', 'South
+2026-06-07 17:38:27.333 |       Africa group-stage goals conceded per game: 2.33 (porous defense)', "South
+2026-06-07 17:38:27.333 |       Africa set-piece conversion rate 3.6x Mexico's (nuanced advantage)", 'Both
+2026-06-07 17:38:27.333 |       teams most commonly exit in group stage', 'No head-to-head history        
+2026-06-07 17:38:27.333 |       available'], 'data_gaps': ['No head-to-head matches between Mexico and    
+2026-06-07 17:38:27.333 |       South Africa in Supabase', 'Knockout data based on 1 match per team,      
+2026-06-07 17:38:27.333 |       sample too small', 'No extra-time or penalty shootout data for Mexico',   
+2026-06-07 17:38:27.333 |       'No manager data available for either team', 'StatsBomb open data not     
+2026-06-07 17:38:27.333 |       available as fallback']}, 'polymarket_digest': {'source': 'polymarket',   
+2026-06-07 17:38:27.333 |       'event_slug': 'fifwc-mex-rsa-2026-06-11', 'event_title': 'Mexico vs. South
+2026-06-07 17:38:27.333 |       Africa', 'implied_probabilities': {'MEX': 0.685, 'draw': 0.205, 'ZAF':    
+2026-06-07 17:38:27.333 |       0.105}, 'sum_implied_probability': 0.995, 'execution_handles':            
+2026-06-07 17:38:27.333 |       [{'outcome': 'MEX', 'condition_id':                                       
+2026-06-07 17:38:27.333 |       '0x4cd77d456c83e7d8c569a8fb8f6396c3f40154f657e6d970733e2b1b6a7110ff',     
+2026-06-07 17:38:27.333 |       'yes_token_id':                                                           
+2026-06-07 17:38:27.333 |       '2077906399826847449069988471480831028965917047795911548974127529527035996
+2026-06-07 17:38:27.333 |       2039', 'mid': 0.685}, {'outcome': 'draw', 'condition_id':                 
+2026-06-07 17:38:27.333 |       '0x0a4b9beb6128863db2b107f185521597a426356f1d9a23c7001401edfd32014b',     
+2026-06-07 17:38:27.333 |       'yes_token_id':                                                           
+2026-06-07 17:38:27.333 |       '1163414467380332546664318883433730034180373709606709223983476082391272600
+2026-06-07 17:38:27.333 |       0274', 'mid': 0.205}, {'outcome': 'ZAF', 'condition_id':                  
+2026-06-07 17:38:27.333 |       '0x17dfc75726fa95d4054d91e80295c8b3e494569617e67a7e620e27562b7952b0',     
+2026-06-07 17:38:27.333 |       'yes_token_id':                                                           
+2026-06-07 17:38:27.333 |       '1153078609627198050607841632043517690771766120290404015469761027058119107
+2026-06-07 17:38:27.333 |       54396', 'mid': 0.105}], 'pricing_available': True, 'data_gaps': [],       
+2026-06-07 17:38:27.333 |       'summary': 'Polymarket provides mid prices for all three outcomes of the  
+2026-06-07 17:38:27.333 |       Mexico vs. South Africa fixture (MEX: 0.685, draw: 0.205, ZAF: 0.105)     
+2026-06-07 17:38:27.333 |       summing to 0.995, indicating no significant data gaps.'},                 
+2026-06-07 17:38:27.333 |       'outcome_mapping': {'home': 'MEX', 'draw': 'draw', 'away': 'ZAF'},        
+2026-06-07 17:38:27.333 |       'edge_table': [{'model_key': 'home', 'outcome': 'MEX', 'team_code': 'MEX',
+2026-06-07 17:38:27.333 |       'prediction_probability': 0.44, 'market_probability': 0.685, 'edge_pp':   
+2026-06-07 17:38:27.333 |       -24.5, 'yes_token_id':                                                    
+2026-06-07 17:38:27.333 |       '2077906399826847449069988471480831028965917047795911548974127529527035996
+2026-06-07 17:38:27.333 |       2039', 'mid': 0.685}, {'model_key': 'draw', 'outcome': 'draw',            
+2026-06-07 17:38:27.333 |       'team_code': 'draw', 'prediction_probability': 0.3, 'market_probability': 
+2026-06-07 17:38:27.333 |       0.205, 'edge_pp': 9.5, 'yes_token_id':                                    
+2026-06-07 17:38:27.333 |       '1163414467380332546664318883433730034180373709606709223983476082391272600
+2026-06-07 17:38:27.333 |       0274', 'mid': 0.205}, {'model_key': 'away', 'outcome': 'ZAF', 'team_code':
+2026-06-07 17:38:27.333 |       'ZAF', 'prediction_probability': 0.26, 'market_probability': 0.105,       
+2026-06-07 17:38:27.333 |       'edge_pp': 15.5, 'yes_token_id':                                          
+2026-06-07 17:38:27.333 |       '1153078609627198050607841632043517690771766120290404015469761027058119107
+2026-06-07 17:38:27.333 |       54396', 'mid': 0.105}], 'best_buy_yes': {'model_key': 'away', 'outcome':  
+2026-06-07 17:38:27.333 |       'ZAF', 'team_code': 'ZAF', 'prediction_probability': 0.26,                
+2026-06-07 17:38:27.333 |       'market_probability': 0.105, 'edge_pp': 15.5, 'yes_token_id':             
+2026-06-07 17:38:27.333 |       '1153078609627198050607841632043517690771766120290404015469761027058119107
+2026-06-07 17:38:27.333 |       54396', 'mid': 0.105}, 'ml_prediction_risk': {'level': 'ml_present',      
+2026-06-07 17:38:27.333 |       'advisory': 'Sportmonks ML probabilities are present. They are public,    
+2026-06-07 17:38:27.333 |       easy to overfit to, and should be used only as weak calibration beside    
+2026-06-07 17:38:27.333 |       factual football evidence.'}, 'order_capability': 'Stair arena orders     
+2026-06-07 17:38:27.333 |       submit buy-YES by fixture_code/team_code. To fade an overpriced outcome,  
+2026-06-07 17:38:27.333 |       buy YES on the underpriced alternative with the best positive edge.'}     
+2026-06-07 17:38:27.333 |                                                                                 
+2026-06-07 17:38:27.335 | DEBUG Creating new sync OpenAI client for model deepseek/deepseek-v4-flash      
+2026-06-07 17:38:36.584 | DEBUG ======================== assistant =========================              
+2026-06-07 17:38:36.595 | DEBUG <reasoning>                                                               
+2026-06-07 17:38:36.595 |       We need to analyze the given data and decide whether to trade. The        
+2026-06-07 17:38:36.595 |       prediction is for Mexico vs South Africa. The prediction probabilities    
+2026-06-07 17:38:36.595 |       from the model: home (Mexico) 0.44, draw 0.3, away (South Africa) 0.26.   
+2026-06-07 17:38:36.595 |       Polymarket implied probabilities: MEX 0.685, draw 0.205, ZAF 0.105. Edge  
+2026-06-07 17:38:36.595 |       calculation: MEX edge = 0.44 - 0.685 = -0.245 (-24.5 pp); draw edge = 0.3 
+2026-06-07 17:38:36.595 |       - 0.205 = 0.095 (9.5 pp); ZAF edge = 0.26 - 0.105 = 0.155 (15.5 pp). So   
+2026-06-07 17:38:36.595 |       two outcomes have positive edge: draw (9.5 pp) and ZAF (15.5 pp). The rule
+2026-06-07 17:38:36.595 |       says if no outcome has positive edge of at least 5 percentage points, do  
+2026-06-07 17:38:36.595 |       not trade. Both positive edges exceed 5 pp. So we should consider trading.
+2026-06-07 17:38:36.595 |       The best positive edge is ZAF at 15.5 pp. Also the best_buy_yes candidate 
+2026-06-07 17:38:36.595 |       is ZAF.                                                                   
+2026-06-07 17:38:36.595 |                                                                                 
+2026-06-07 17:38:36.595 |       Now we need to evaluate confidence and rationale. The prediction          
+2026-06-07 17:38:36.595 |       evidence_basis is 'insufficient', trade_grade False, confidence_level     
+2026-06-07 17:38:36.595 |       'low'. The rationale mentions no head-to-head data, very small knockout   
+2026-06-07 17:38:36.595 |       samples, etc. The model probabilities are based on limited data. However, 
+2026-06-07 17:38:36.595 |       the market probabilities heavily favor Mexico at 68.5%, which might be    
+2026-06-07 17:38:36.595 |       overconfident. The edge for South Africa is large (15.5 pp) and for draw  
+2026-06-07 17:38:36.595 |       is 9.5 pp. But the model's probabilities are from a weak ML prediction.   
+2026-06-07 17:38:36.595 |       The Sportmonks ML is present and advisory says to use only as weak        
+2026-06-07 17:38:36.595 |       calibration. So we have to consider factual evidence. The key factors from
+2026-06-07 17:38:36.595 |       the model: Mexico higher group win rate, lower goals conceded; South      
+2026-06-07 17:38:36.595 |       Africa weaker defense but set-piece advantage. But knockout data is       
+2026-06-07 17:38:36.595 |       extremely limited. There's no head-to-head. The data gaps are significant.
+2026-06-07 17:38:36.595 |       The model's prediction for South Africa win at 26% seems plausible but    
+2026-06-07 17:38:36.595 |       uncertain. The market has South Africa at 10.5%, which seems too low given
+2026-06-07 17:38:36.595 |       that South Africa did win group stage matches and has set-piece threat.   
+2026-06-07 17:38:36.595 |                                                                                 
+2026-06-07 17:38:36.595 |       Given the large edge, but low confidence due to data gaps, we need to     
+2026-06-07 17:38:36.595 |       decide whether to trade. The rules say: "Prefer the provided best_buy_yes 
+2026-06-07 17:38:36.595 |       candidate when it exists, unless you can justify a more conservative      
+2026-06-07 17:38:36.595 |       no-trade due to low confidence or missing pricing." Here, best_buy_yes is 
+2026-06-07 17:38:36.595 |       ZAF with 15.5 pp edge. The pricing is available. The confidence is low.   
+2026-06-07 17:38:36.595 |       Should we trade? The rule also says: "Do not let an edge that comes       
+2026-06-07 17:38:36.595 |       primarily from Sportmonks ML probabilities override missing factual       
+2026-06-07 17:38:36.595 |       evidence. You may still decide to trade, but the rationale must explicitly
+2026-06-07 17:38:36.595 |       explain the factual, non-ML evidence supporting that decision."           
+2026-06-07 17:38:36.595 |                                                                                 
+2026-06-07 17:38:36.595 |       We need to articulate factual evidence supporting the edge. The model's   
+2026-06-07 17:38:36.595 |       key factors include Mexico's stronger defense and South Africa's weak     
+2026-06-07 17:38:36.595 |       defense, but these are from group stage. South Africa's group win rate is 
+2026-06-07 17:38:36.595 |       low but they have a set-piece advantage. The only factual evidence that   
+2026-06-07 17:38:36.595 |       could support South Africa being undervalued is that the market might be  
+2026-06-07 17:38:36.595 |       overrating Mexico based on reputation or group stage performance, but     
+2026-06-07 17:38:36.595 |       South Africa has a chance. However, the prediction itself says "no        
+2026-06-07 17:38:36.595 |       head-to-head data exists" and "knockout data is extremely limited". So    
+2026-06-07 17:38:36.595 |       factual evidence is thin.                                                 
+2026-06-07 17:38:36.595 |                                                                                 
+2026-06-07 17:38:36.595 |       Given the low confidence and the advisory about ML risk, I think a        
+2026-06-07 17:38:36.595 |       conservative no-trade is justified. The edge is large but based on a weak 
+2026-06-07 17:38:36.595 |       model on insufficient data. The market might have better information.     
+2026-06-07 17:38:36.595 |       Also, the draw edge of 9.5 pp is also notable, but similarly low          
+2026-06-07 17:38:36.595 |       confidence.                                                               
+2026-06-07 17:38:36.595 |                                                                                 
+2026-06-07 17:38:36.595 |       Thus, I'll set should_trade=false. The direction must be "none", size_usdc
+2026-06-07 17:38:36.595 |       "0", limit_price null, team_code null. Edge_pp can be null or the best    
+2026-06-07 17:38:36.595 |       edge? The schema says edge_pp is float|null. I'll set to null since no    
+2026-06-07 17:38:36.595 |       trade. Confidence: "low". Rationale: explain why no trade despite positive
+2026-06-07 17:38:36.595 |       edges.                                                                    
+2026-06-07 17:38:36.595 |                                                                                 
+2026-06-07 17:38:36.595 |       Alternatively, consider trading ZAF with a small size? The maximum trade  
+2026-06-07 17:38:36.595 |       size is $5, but we can use $1 to $5. But the rule says "If                
+2026-06-07 17:38:36.595 |       should_trade=true, direction must be 'long', team_code must be one of the 
+2026-06-07 17:38:36.595 |       available outcome codes...". The decision to trade or not is based on     
+2026-06-07 17:38:36.595 |       positive edge >=5 pp and confidence. Since confidence is low and data gaps
+2026-06-07 17:38:36.595 |       are large, I think no-trade is more prudent.                              
+2026-06-07 17:38:36.595 |                                                                                 
+2026-06-07 17:38:36.595 |       I'll go with no-trade.                                                    
+2026-06-07 17:38:36.595 |       </reasoning>                                                              
+2026-06-07 17:38:36.602 | DEBUG {                                                                         
+2026-06-07 17:38:36.602 |         "should_trade": false,                                                  
+2026-06-07 17:38:36.602 |         "outcome": "South Africa Win",                                          
+2026-06-07 17:38:36.602 |         "team_code": null,                                                      
+2026-06-07 17:38:36.602 |         "direction": "none",                                                    
+2026-06-07 17:38:36.602 |         "size_usdc": "0",                                                       
+2026-06-07 17:38:36.602 |         "limit_price": null,                                                    
+2026-06-07 17:38:36.602 |         "edge_pp": null,                                                        
+2026-06-07 17:38:36.602 |         "confidence": "low",                                                    
+2026-06-07 17:38:36.602 |         "rationale": "No trade. The model shows a 15.5 pp edge for ZAF (South   
+2026-06-07 17:38:36.602 |       Africa) and a 9.5 pp edge for draw, both exceeding the 5 pp threshold.    
+2026-06-07 17:38:36.602 |       However, the prediction's evidence basis is explicitly 'insufficient',    
+2026-06-07 17:38:36.602 |       with no head-to-head data, extremely small knockout samples (1 match      
+2026-06-07 17:38:36.602 |       each), and no manager data. The Sportmonks ML probabilities are weak and  
+2026-06-07 17:38:36.602 |       are the primary source of the edge. The market heavily favors Mexico      
+2026-06-07 17:38:36.602 |       (68.5%), which could be overconfident, but factual non-ML evidence to     
+2026-06-07 17:38:36.602 |       support a South Africa win is very limited—only Mexico's better           
+2026-06-07 17:38:36.602 |       group-stage defense and South Africa's set-piece advantage are cited, and 
+2026-06-07 17:38:36.602 |       these are offset by data gaps and small sample sizes. Given the low       
+2026-06-07 17:38:36.602 |       confidence and the advisory to not let ML-driven edge override missing    
+2026-06-07 17:38:36.602 |       evidence, a conservative no-trade is justified. The best_buy_yes candidate
+2026-06-07 17:38:36.602 |       (ZAF) is not acted upon due to insufficient reliable data to support the  
+2026-06-07 17:38:36.602 |       edge."                                                                    
+2026-06-07 17:38:36.602 |       }                                                                         
+2026-06-07 17:38:36.603 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:38:36.604 | DEBUG * Tokens:                      input=1952, output=1238, total=3190,       
+2026-06-07 17:38:36.604 |       reasoning=962                                                             
+2026-06-07 17:38:36.605 | DEBUG * Duration:                    9.2505s                                    
+2026-06-07 17:38:36.607 | DEBUG * Tokens per second:           133.8301 tokens/s                          
+2026-06-07 17:38:36.607 | DEBUG * Time to first token:         9.2505s                                    
+2026-06-07 17:38:36.608 | DEBUG ************************  METRICS  *************************              
+2026-06-07 17:38:36.610 | DEBUG --------------- OpenRouter Chat Response End ---------------              
+2026-06-07 17:38:36.612 | DEBUG Added RunOutput to Agent Session                                          
+2026-06-07 17:38:36.697 | DEBUG Created or updated AgentSession record: prematch:19609127:20260607T120628Z
+2026-06-07 17:38:36.698 | DEBUG *** Agent Run End: 1dd316af-d335-4054-923d-5baa5dba20a8 ****              
+2026-06-07 17:38:49.508 | INFO:     connection closed
+2026-06-07 17:38:50.067 | INFO:     172.20.0.1:48068 - "GET /runs HTTP/1.1" 200 OK
+2026-06-07 17:38:50.455 | INFO:     172.20.0.1:48076 - "GET /runs HTTP/1.1" 200 OK

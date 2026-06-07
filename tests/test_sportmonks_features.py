@@ -69,3 +69,30 @@ def test_expected_goals_maps_participant_ids_to_team_codes():
 
     assert features["expected_goals"] == {"MEX": 1.62, "ZAF": 0.84}
     assert features["data_quality"]["expected_goals"] == "available"
+
+
+def test_factual_context_reads_weather_from_metadata():
+    fixture = {
+        "starting_at": "2026-06-11 19:00:00",
+        "participants": [
+            {"id": 10, "name": "Mexico", "short_code": "MEX", "meta": {"location": "home"}},
+            {"id": 20, "name": "South Africa", "short_code": "ZAF", "meta": {"location": "away"}},
+        ],
+        "metadata": [
+            {"type": "weather", "value": {"temperature": 24, "description": "clear"}},
+        ],
+        "venue": {"name": "Estadio Azteca"},
+        "lineups": [{"participant_id": 10, "formation": "4-3-3"}],
+        "sidelined": [{"participant_id": 20, "player_name": "Example Player"}],
+    }
+
+    features = build_sportmonks_features(fixture)
+    factual = features["factual_context"]
+
+    assert factual["kickoff"] == "2026-06-11 19:00:00"
+    assert factual["weather"] == {"temperature": 24, "description": "clear"}
+    assert factual["weather_source"] == "metadata"
+    assert factual["lineup_count"] == 1
+    assert factual["sidelined_count"] == 1
+    assert features["data_quality"]["weather"] == "available"
+    assert features["data_quality"]["venue"] == "available"
