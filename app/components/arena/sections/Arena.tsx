@@ -88,7 +88,6 @@ export default function Arena() {
     <section
       id="arena"
       className="relative w-full bg-ink-950"
-      style={{ minHeight: "700vh" }}
     >
       <div className="absolute top-6 right-6 md:top-8 md:right-10 select-none z-10">
         <MonoLabel tone="faint">01 / 09</MonoLabel>
@@ -111,7 +110,53 @@ export default function Arena() {
       {/* Sticky scene + scrolling narrative */}
       <div className="relative grid grid-cols-12 gap-6 page-x">
         <div className="col-span-12 lg:col-span-7">
-          <div className="sticky top-24 h-[80vh] arena-card relative overflow-hidden">
+          <div className="sticky top-24 h-[80vh] arena-card overflow-hidden">
+            {/* SVG fallback — always visible, ensures left column is never blank */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 700 600" preserveAspectRatio="xMidYMid meet" aria-hidden>
+              {/* Outer orbit rings */}
+              <circle cx="350" cy="300" r="200" fill="none" stroke="rgba(0,231,255,0.06)" strokeWidth="1" />
+              <circle cx="350" cy="300" r="140" fill="none" stroke="rgba(0,231,255,0.1)" strokeWidth="1" strokeDasharray="4 8" />
+              <circle cx="350" cy="300" r="80" fill="none" stroke="rgba(0,231,255,0.14)" strokeWidth="1" />
+              {/* Edges between nodes */}
+              <g stroke="rgba(0,231,255,0.18)" strokeWidth="1" fill="none">
+                <line x1="350" y1="300" x2="490" y2="200" />
+                <line x1="350" y1="300" x2="210" y2="200" />
+                <line x1="350" y1="300" x2="460" y2="420" />
+                <line x1="350" y1="300" x2="240" y2="420" />
+                <line x1="490" y1="200" x2="210" y2="200" strokeOpacity="0.1" />
+                <line x1="490" y1="200" x2="460" y2="420" strokeOpacity="0.1" />
+                <line x1="210" y1="200" x2="240" y2="420" strokeOpacity="0.1" />
+                <line x1="460" y1="420" x2="240" y2="420" strokeOpacity="0.1" />
+              </g>
+              {/* POLY-09 — center node */}
+              <circle cx="350" cy="300" r="32" fill="rgba(0,231,255,0.08)" stroke="#00E7FF" strokeWidth="1.5" />
+              <circle cx="350" cy="300" r="18" fill="rgba(0,231,255,0.15)" stroke="#00E7FF" strokeWidth="1" />
+              <circle cx="350" cy="300" r="6" fill="#00E7FF" />
+              <text x="350" y="344" textAnchor="middle" fill="#00E7FF" fontSize="9" fontFamily="monospace" letterSpacing="2">POLY-09</text>
+              {/* Rival nodes */}
+              {[
+                { cx: 490, cy: 200, label: "TIDE",  r: 20 },
+                { cx: 210, cy: 200, label: "KEEL",  r: 18 },
+                { cx: 460, cy: 420, label: "PRLX",  r: 16 },
+                { cx: 240, cy: 420, label: "LDGR",  r: 15 },
+              ].map((n) => (
+                <g key={n.label}>
+                  <circle cx={n.cx} cy={n.cy} r={n.r + 10} fill="rgba(255,255,255,0.02)" stroke="rgba(0,231,255,0.25)" strokeWidth="1" />
+                  <circle cx={n.cx} cy={n.cy} r={n.r * 0.5} fill="rgba(255,255,255,0.5)" />
+                  <text x={n.cx} y={n.cy + n.r + 18} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="8" fontFamily="monospace" letterSpacing="1">{n.label}</text>
+                </g>
+              ))}
+              {/* Signal pulses — animated dots */}
+              <circle cx="350" cy="300" r="80" fill="none" stroke="rgba(0,231,255,0.25)" strokeWidth="1.5">
+                <animate attributeName="r" values="80;200;80" dur="4s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.25;0;0.25" dur="4s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="350" cy="300" r="80" fill="none" stroke="rgba(0,231,255,0.15)" strokeWidth="1">
+                <animate attributeName="r" values="40;160;40" dur="4s" begin="2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;0;0.2" dur="4s" begin="2s" repeatCount="indefinite" />
+              </circle>
+            </svg>
+            {/* Three.js canvas overlays when ready */}
             <ArenaGraph />
             <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
               <MonoLabel>Live Graph</MonoLabel>
@@ -129,9 +174,9 @@ export default function Arena() {
           </div>
         </div>
 
-        <div className="col-span-12 lg:col-span-5 flex flex-col gap-[120vh] pb-[40vh]">
+        <div className="col-span-12 lg:col-span-5 flex flex-col gap-16 pb-16">
           {STAGES.map((s, i) => (
-            <div key={s.id} className="arena-card p-8 min-h-[60vh] flex flex-col">
+            <div key={s.id} className="arena-card p-8 flex flex-col">
               <Kicker index={s.index}>{s.title}</Kicker>
               <h3
                 className="arena-display text-white mt-4"

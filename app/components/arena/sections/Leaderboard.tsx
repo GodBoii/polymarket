@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import Kicker from "../primitives/Kicker";
 import Hairline from "../primitives/Hairline";
 import MonoLabel from "../primitives/MonoLabel";
@@ -12,25 +12,6 @@ const TIMEFRAMES = ["24H", "7D", "30D"] as const;
 export default function Leaderboard() {
   const [tf, setTf] = useState<(typeof TIMEFRAMES)[number]>("24H");
   const [hover, setHover] = useState<string | null>(null);
-  const sectionRef = useState<HTMLElement | null>(null)[0];
-  const [revealProgress, setRevealProgress] = useState(0);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onScroll = () => {
-      const el = document.getElementById("leaderboard");
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const start = vh * 0.85;
-      const end = vh * 0.25;
-      const p = Math.max(0, Math.min(1, 1 - (r.top - end) / (start - end)));
-      setRevealProgress(p);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   return (
     <section id="leaderboard" className="relative w-full bg-ink-950 py-24 md:py-36 overflow-hidden">
@@ -82,13 +63,12 @@ export default function Leaderboard() {
 
             <div>
               {LEADERBOARD.map((row, i) => {
-                const reveal = Math.max(0, Math.min(1, (revealProgress - i * 0.1) * 1.6));
                 return (
                   <motion.div
                     key={row.name}
-                    initial={{ opacity: 0, y: 24 }}
-                    animate={{ opacity: reveal, y: (1 - reveal) * 24 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
                     onMouseEnter={() => setHover(row.name)}
                     onMouseLeave={() => setHover(null)}
                     className={`grid grid-cols-12 gap-3 items-center py-6 border-b border-white/[0.06] ${

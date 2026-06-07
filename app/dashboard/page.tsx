@@ -179,7 +179,7 @@ function Dashboard({ email }: { email: string }) {
             <div className="grid h-7 w-7 place-items-center rounded-full border border-cyan-300 text-cyan-300 shadow-[0_0_18px_rgba(0,229,255,0.45)]">
               <Radio size={14} />
             </div>
-            <span className="font-display text-lg tracking-[-0.02em]">ORACLE</span>
+            <span className="font-display text-lg tracking-[-0.02em]">POLYCOGNITIVE</span>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-white/35 sm:inline">/ Polycognitive Console</span>
           </Link>
           <div className="flex items-center gap-2">

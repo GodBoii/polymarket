@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Search, MessagesSquare, LineChart, Trophy, Sigma } from "lucide-react";
 import Kicker from "../primitives/Kicker";
 import Hairline from "../primitives/Hairline";
@@ -50,57 +49,30 @@ const EDGES = [
 ];
 
 export default function WhyWeWin() {
-  const [pinned, setPinned] = useState(true);
-
-  // Release the pinned headline after the user scrolls past the first viewport
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onScroll = () => {
-      const el = document.getElementById("edge");
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      setPinned(r.top > -vh * 0.3);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
     <section id="edge" className="relative w-full bg-ink-950 overflow-hidden">
       <div className="absolute top-6 right-6 md:top-8 md:right-10 select-none z-10">
         <MonoLabel tone="faint">06 / 09</MonoLabel>
       </div>
 
-      {/* Pinned headline — released by scroll */}
-      <div className="relative" style={{ height: "200vh" }}>
-        <div
-          className="sticky top-0 h-screen flex items-center"
+      {/* Headline — static, no sticky scroll driver */}
+      <div className="relative page-x pt-24 md:pt-36 pb-24">
+        <Kicker index="06">EDGE</Kicker>
+        <h2
+          className="arena-display text-white mt-6 max-w-6xl"
           style={{
-            transform: pinned ? "scale(1)" : "scale(0.86)",
-            transition: "transform 800ms cubic-bezier(0.22, 1, 0.36, 1)",
+            fontSize: "clamp(56px, 9vw, 160px)",
+            letterSpacing: "-0.04em",
+            lineHeight: 0.95,
           }}
         >
-          <div className="page-x w-full">
-            <Kicker index="06">EDGE</Kicker>
-            <h2
-              className="arena-display text-white mt-6 max-w-6xl"
-              style={{
-                fontSize: "clamp(56px, 9vw, 160px)",
-                letterSpacing: "-0.04em",
-                lineHeight: 0.95,
-              }}
-            >
-              <Word delay={0}>Our</Word> <Word delay={80}>edge</Word> <Word delay={160}>is</Word> <Word delay={240}>not</Word> <Word delay={320}>data.</Word>
-              <br />
-              <Word delay={500} muted>Everyone</Word> <Word delay={580} muted>has</Word> <Word delay={660} muted>data.</Word>
-              <br />
-              <Word delay={820} muted>Our</Word> <Word delay={900} muted>edge</Word> <Word delay={980} muted>is</Word>{" "}
-              <Word delay={1060} accent>reasoning.</Word>
-            </h2>
-          </div>
-        </div>
+          <Word delay={0}>Our</Word> <Word delay={80}>edge</Word> <Word delay={160}>is</Word> <Word delay={240}>not</Word> <Word delay={320}>data.</Word>
+          <br />
+          <Word delay={500} muted>Everyone</Word> <Word delay={580} muted>has</Word> <Word delay={660} muted>data.</Word>
+          <br />
+          <Word delay={820} muted>Our</Word> <Word delay={900} muted>edge</Word> <Word delay={980} muted>is</Word>{" "}
+          <Word delay={1060} accent>reasoning.</Word>
+        </h2>
       </div>
 
       {/* Edge cards */}
@@ -153,10 +125,10 @@ function EdgeCard({ e, span }: { e: Edge; span: string }) {
       </h3>
       <p className="mt-4 text-white/55 text-sm leading-relaxed flex-1">{e.body}</p>
       <Hairline className="my-6" />
-      <div className="flex items-baseline justify-between">
+      <div className="flex flex-col gap-1.5 items-start">
         <span
           className="font-display text-accent"
-          style={{ fontSize: "clamp(28px, 2.6vw, 40px)", letterSpacing: "-0.04em", fontWeight: 500, lineHeight: 1 }}
+          style={{ fontSize: "clamp(28px, 2.6vw, 40px)", letterSpacing: "-0.04em", fontWeight: 500, lineHeight: 1.1 }}
         >
           {e.proof}
         </span>
