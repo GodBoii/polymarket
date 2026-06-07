@@ -44,7 +44,7 @@ SportMonks participant `country_id` values are the primary Supabase join keys. H
 
 ## Agent Stages
 
-The backend uses Agno/MiMo agents for structured JSON digests:
+The backend uses Agno/OpenRouter agents for structured JSON digests:
 
 - Fixture Selector: normalizes the selected fixture.
 - SportMonks Research Agent: summarizes football signals without market prices.

@@ -1,6 +1,6 @@
 # Backend Guide
 
-The backend is a FastAPI service that runs the Agno/MiMo multi-agent pipeline and streams live run events to the frontend over WebSocket.
+The backend is a FastAPI service that runs the Agno/OpenRouter multi-agent pipeline and streams live run events to the frontend over WebSocket.
 
 ## Run Locally
 
@@ -30,7 +30,7 @@ Required:
 
 ```text
 ARENA_KEY
-MIMO_API_KEY
+OPENROUTER_API_KEY
 SUPABASE_APP_URL
 SUPABASE_APP_ANON_KEY
 SUPABASE_APP_SERVICE_ROLE_KEY
