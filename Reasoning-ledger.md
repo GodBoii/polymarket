@@ -40,7 +40,7 @@ Constants at the top of your module:
 ```python
 import os, json, time, uuid, requests
 
-ARENA          = "https://staging.stair-ai.com"
+ARENA          = "https://stair-ai.com"
 ARENA_KEY      = os.environ["ARENA_API_KEY"]    # mint at /api-keys (see Builder Guide §2)
 H_ARENA        = {"x-api-key": ARENA_KEY}
 LEDGER_RECORDS = f"{ARENA}/api/v1/arena/ledger/records"
@@ -360,7 +360,7 @@ pred = sink._new_record(
     action_type="prediction",
     target_system="arena",
     action_summary=f"Predict {outcome} @ p={probability:.2f}",
-    parameters={"fixture_code": str(fixture_id),
+    parameters={"fixture_id": str(fixture_id),
                 "outcome":      outcome,        # e.g. 'MEX' / 'ZAF' / 'draw'
                 "probability":  probability},   # clamp to [0.001, 0.999]
     dry_run=False, execution_status="confirmed",

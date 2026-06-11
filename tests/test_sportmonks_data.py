@@ -5,7 +5,7 @@ import requests
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ARENA = "https://staging.stair-ai.com"
+ARENA = "https://stair-ai.com"
 SPORTMONKS_SEASON_ID = 26618
 
 
@@ -47,7 +47,7 @@ def main() -> None:
     fixture_id = 19609127
     fixture_resp = requests.get(
         f"{base}/fixtures/{fixture_id}",
-        params={"include": "participants;predictions;odds;xGFixture"},
+        params={"include": "participants;odds;xGFixture"},
         headers=headers,
         timeout=60,
     )
@@ -59,7 +59,6 @@ def main() -> None:
     print(f"fixture id: {fixture.get('id')}")
     print(f"fixture name: {fixture.get('name')}")
     print(f"participants: {len(participants)}")
-    print(f"predictions rows: {len(fixture.get('predictions') or [])}")
     print(f"odds rows: {len(fixture.get('odds') or [])}")
     print(f"xG rows: {len(fixture.get('xgfixture') or [])}")
     print("Sportmonks smoke test passed.")

@@ -26,6 +26,11 @@ type RunRow = {
   events?: EventRow[];
 };
 
+type HealthResponse = {
+  status: string;
+  live_orders_enabled?: boolean;
+};
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8001";
 
@@ -43,6 +48,8 @@ function ConsolePage({ sessionEmail }: { sessionEmail: string }) {
   const [selectedRun, setSelectedRun] = useState<RunRow | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [live, setLive] = useState(false);
+  const [liveOrders, setLiveOrders] = useState(false);
+  const [backendLiveEnabled, setBackendLiveEnabled] = useState(false);
   const [activeStage, setActiveStage] = useState("idle");
   const [error, setError] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
@@ -51,6 +58,12 @@ function ConsolePage({ sessionEmail }: { sessionEmail: string }) {
     () => events.filter((event) => event.event_type === "token").map((event) => String(event.payload.text || "")).join(""),
     [events],
   );
+
+  async function loadHealth() {
+    const response = await fetch(`${apiUrl}/health`);
+    const data: HealthResponse = await response.json();
+    setBackendLiveEnabled(Boolean(data.live_orders_enabled));
+  }
 
   async function loadRuns() {
     const response = await fetch(`${apiUrl}/runs`);
@@ -75,10 +88,15 @@ function ConsolePage({ sessionEmail }: { sessionEmail: string }) {
     setEvents([]);
     setSelectedRun(null);
     setActiveStage("connecting");
+    if (liveOrders && !backendLiveEnabled) {
+      setActiveStage("idle");
+      setError("Live Stair orders are not enabled on the backend yet. Restart the Docker backend after setting ALLOW_LIVE_ORDERS=true.");
+      return;
+    }
     const ws = new WebSocket(`${wsUrl}/ws/runs`);
     ws.onopen = () => {
       setLive(true);
-      ws.send(JSON.stringify({ fixture_id: Number(fixtureId), dry_run: true }));
+      ws.send(JSON.stringify({ fixture_id: Number(fixtureId), dry_run: !liveOrders }));
     };
     ws.onclose = () => {
       setLive(false);
@@ -121,6 +139,7 @@ function ConsolePage({ sessionEmail }: { sessionEmail: string }) {
   }
 
   useEffect(() => {
+    loadHealth();
     loadRuns();
   }, []);
 
@@ -190,9 +209,18 @@ function ConsolePage({ sessionEmail }: { sessionEmail: string }) {
                 onChange={(e) => setFixtureId(Number(e.target.value))}
               />
             </label>
+            <label>
+              Live orders
+              <input
+                type="checkbox"
+                checked={liveOrders}
+                disabled={!backendLiveEnabled}
+                onChange={(e) => setLiveOrders(e.target.checked)}
+              />
+            </label>
             <button type="submit">
               <Play size={14} />
-              Start run
+              {liveOrders ? "Start live run" : "Start dry run"}
             </button>
           </form>
           <div className="status-bar">
@@ -201,6 +229,7 @@ function ConsolePage({ sessionEmail }: { sessionEmail: string }) {
               {live ? "Live" : "Idle"}
             </span>
             <span className="stage">Stage: {activeStage}</span>
+            <span className="stage">Backend live: {backendLiveEnabled ? "enabled" : "disabled"}</span>
           </div>
         </header>
 

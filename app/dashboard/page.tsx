@@ -41,6 +41,11 @@ type EventRow = {
   payload: Record<string, unknown>;
 };
 
+type HealthResponse = {
+  status: string;
+  live_orders_enabled?: boolean;
+};
+
 type TranscriptItem =
   | { id: string; kind: "message"; role: string; stage: string; content: string; summary?: Record<string, unknown> }
   | { id: string; kind: "tool"; stage: string; title: string; content: string; status: "running" | "completed"; payload?: unknown }
@@ -52,17 +57,13 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8001";
 
 const STAGE_LABELS: Record<string, string> = {
-  scout: "Scout",
-  fixture_selector: "Fixture",
-  sportmonks_fetch: "SportMonks",
-  sportmonks_agent: "Football analysis",
-  polymarket_fetch: "Polymarket",
-  polymarket_agent: "Market analysis",
-  supabase_fetch: "Supabase",
-  supabase_agent: "Historical priors",
-  prediction_agent: "Prediction",
-  strategy_agent: "Strategy",
-  executor: "Executor",
+  polycognitive: "POLYCOGNITIVE",
+  fixture_selector: "Fixture agent",
+  match_context: "Match context",
+  polymarket_context: "Polymarket",
+  exposure: "Exposure",
+  prediction_submission: "Prediction",
+  bet: "Bet",
   ledger_writer: "Ledger",
   decision: "Decision",
 };
@@ -83,9 +84,21 @@ function Dashboard({ email }: { email: string }) {
   const [activeRun, setActiveRun] = useState<RunRow | null>(null);
   const [activeStage, setActiveStage] = useState("idle");
   const [live, setLive] = useState(false);
+  const [liveOrders, setLiveOrders] = useState(false);
+  const [backendLiveEnabled, setBackendLiveEnabled] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
+
+  async function loadHealth() {
+    try {
+      const response = await fetch(`${apiUrl}/health`);
+      const data: HealthResponse = await response.json();
+      setBackendLiveEnabled(Boolean(data.live_orders_enabled));
+    } catch {
+      setBackendLiveEnabled(false);
+    }
+  }
 
   async function loadRuns() {
     try {
@@ -105,13 +118,25 @@ function Dashboard({ email }: { email: string }) {
     setActiveStage("connecting");
     setConnecting(true);
     if (wsRef.current) wsRef.current.close();
+    if (liveOrders && !backendLiveEnabled) {
+      setConnecting(false);
+      setActiveStage("idle");
+      setError("Live Stair orders are not enabled on the backend yet. Restart the Docker backend after setting ALLOW_LIVE_ORDERS=true.");
+      return;
+    }
 
     const ws = new WebSocket(`${wsUrl}/ws/runs`);
     ws.onopen = () => {
       setLive(true);
       setConnecting(false);
       setActiveStage("started");
-      ws.send(JSON.stringify(manualMode ? { mode: "manual", fixture_id: Number(fixtureId), dry_run: true } : { mode: "auto", dry_run: true }));
+      ws.send(
+        JSON.stringify(
+          manualMode
+            ? { mode: "manual", fixture_id: Number(fixtureId), dry_run: !liveOrders }
+            : { mode: "auto", dry_run: !liveOrders },
+        ),
+      );
     };
     ws.onclose = () => {
       setLive(false);
@@ -161,6 +186,7 @@ function Dashboard({ email }: { email: string }) {
   }
 
   useEffect(() => {
+    loadHealth();
     loadRuns();
     return () => {
       if (wsRef.current) wsRef.current.close();
@@ -209,7 +235,7 @@ function Dashboard({ email }: { email: string }) {
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/58">
                   The agent scouts World Cup markets, selects a match, gathers SportMonks, Supabase, and Polymarket evidence,
-                  then explains its prediction and dry-run trade decision like an AI research chat.
+                  then explains its prediction and can submit a real arena order when the strategy selects a trade.
                 </p>
               </div>
               <LiveBadge live={live} connecting={connecting} activeStage={stageLabel} />
@@ -220,6 +246,16 @@ function Dashboard({ email }: { email: string }) {
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/65 transition hover:border-white/20">
                   <input type="checkbox" checked={manualMode} onChange={(e) => setManualMode(e.target.checked)} className="h-3.5 w-3.5 accent-cyan-300" />
                   Manual fixture override
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/[0.05] px-3 py-2 text-xs text-amber-100 transition hover:border-amber-300/35">
+                  <input
+                    type="checkbox"
+                    checked={liveOrders}
+                    disabled={!backendLiveEnabled}
+                    onChange={(e) => setLiveOrders(e.target.checked)}
+                    className="h-3.5 w-3.5 accent-amber-300"
+                  />
+                  Enable live Stair orders
                 </label>
                 <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">{manualMode ? "Manual fixture mode" : "Auto scout mode"}</span>
               </div>
@@ -234,11 +270,20 @@ function Dashboard({ email }: { email: string }) {
                   />
                 </label>
               )}
-              <button disabled={live || connecting} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 px-6 text-sm font-semibold text-black shadow-[0_0_24px_rgba(0,229,255,0.35)] transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit">
+              <button disabled={live || connecting || (liveOrders && !backendLiveEnabled)} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 px-6 text-sm font-semibold text-black shadow-[0_0_24px_rgba(0,229,255,0.35)] transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit">
                 {live || connecting ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} className="fill-current" />}
-                {live || connecting ? "Streaming..." : "Polycognitive agent"}
+                {live || connecting ? "Streaming..." : liveOrders ? "Run with live orders" : "Run dry run"}
               </button>
             </form>
+
+            <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4 text-xs leading-relaxed text-white/58">
+              {liveOrders
+                ? "Live-order mode is enabled. The backend will require ALLOW_LIVE_ORDERS=true and can submit real Stair play-money orders."
+                : "Dry-run mode is enabled. The agent will still scout, predict, build the ledger, and prepare order payloads, but it will not submit live Stair orders."}
+              <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+                Backend live-orders capability: {backendLiveEnabled ? "enabled" : "disabled"}
+              </div>
+            </div>
 
             {error && <div className="mt-5 rounded-xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">{error}</div>}
           </section>
@@ -271,7 +316,7 @@ function Dashboard({ email }: { email: string }) {
                   )}
                 </div>
               ) : (
-                <EmptyState icon={MessageSquare} title="No transcript yet" description="Start the Polycognitive agent to watch it scout, call tools, reason, and make a dry-run decision." />
+                <EmptyState icon={MessageSquare} title="No transcript yet" description="Start the Polycognitive agent to watch it scout, call tools, reason, and make a live arena decision." />
               )}
             </div>
           </section>
@@ -348,9 +393,9 @@ function Dashboard({ email }: { email: string }) {
 
           <section className="border border-cyan-300/15 bg-cyan-300/[0.04] p-5">
             <ShieldCheck size={18} className="text-cyan-300" />
-            <h3 className="mt-3 font-display text-base tracking-[-0.01em]">Dry-run by default</h3>
+            <h3 className="mt-3 font-display text-base tracking-[-0.01em]">Execution mode</h3>
             <p className="mt-2 text-xs leading-relaxed text-white/55">
-              The agent builds schema-shaped Reasoning Ledger records and order payloads for inspection. It only submits ledger records or orders when the backend receives live mode.
+              The dashboard now defaults to dry-run mode. Turn on live Stair orders only when your backend is launched with `ALLOW_LIVE_ORDERS=true` and you intentionally want real arena execution.
             </p>
           </section>
         </aside>
@@ -443,7 +488,7 @@ function DecisionCard({ summary }: { summary: Record<string, unknown> }) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-300">Final decision</div>
-          <h3 className="mt-1 font-display text-xl tracking-[-0.02em]">{shouldTrade ? "Dry-run trade prepared" : "No-trade decision"}</h3>
+          <h3 className="mt-1 font-display text-xl tracking-[-0.02em]">{shouldTrade ? "Live trade submitted" : "No-trade decision"}</h3>
           <p className="mt-2 text-sm leading-relaxed text-white/70">{String(summary.rationale || "The agent compared football priors with market pricing and did not expose private chain-of-thought.")}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MiniStat label="Fixture" value={String(fixture?.name || fixture?.fixture_id || "n/a")} />

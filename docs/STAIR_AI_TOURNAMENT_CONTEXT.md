@@ -4,13 +4,13 @@ This document captures the operating context for ORACLE inside the Stair AI Worl
 
 - `context.txt`
 - `World-Cup-Arena-Public/worldcup-arena-sample-agent.ipynb`
-- https://staging.stair-ai.com/builder-guide
-- https://staging.stair-ai.com/api
+- https://stair-ai.com/builder-guide
+- https://stair-ai.com/api
 - https://stair-ai.gitbook.io/stair-ai-docs
-- https://staging.stair-ai.com/builder-guide#data
-- https://staging.stair-ai.com/builder-guide#data-sportmonks
-- https://staging.stair-ai.com/builder-guide#data-supabase
-- https://staging.stair-ai.com/builder-guide#data-polymarket
+- https://stair-ai.com/builder-guide#data
+- https://stair-ai.com/builder-guide#data-sportmonks
+- https://stair-ai.com/builder-guide#data-supabase
+- https://stair-ai.com/builder-guide#data-polymarket
 
 ## Arena Contract
 
@@ -59,7 +59,7 @@ https://api.sportmonks.com/v3/football/<path>
 becomes:
 
 ```text
-https://staging.stair-ai.com/api/v1/data/proxy/sportmonks/v3/football/<path>
+https://stair-ai.com/api/v1/data/proxy/sportmonks/v3/football/<path>
 ```
 
 Auth changes from Sportmonks token auth to:
@@ -149,7 +149,7 @@ Payload shape:
 
 ```json
 {
-  "fixture_code": "19609127",
+  "fixture_id": "19609127",
   "team_code": "MEX",
   "usd_size": "1.00",
   "limit_price": 0.68,
@@ -160,7 +160,7 @@ Payload shape:
 
 Important execution detail:
 
-- The current Stair arena order payload is buy-YES oriented: it takes `fixture_code` and `team_code`, not an explicit side or NO-token id.
+- The current Stair arena order payload is buy-YES oriented: it takes `fixture_id` and `team_code`, not an explicit side or NO-token id.
 - This does not mean the strategy should only analyze the favorite or only look for home-team longs.
 - For a three-outcome football market, fading an overpriced outcome can often be expressed by buying YES on one of the underpriced alternatives (`home`, `draw`, or `away`).
 - ORACLE should evaluate all three YES outcomes and choose the highest positive-edge executable buy-YES candidate.

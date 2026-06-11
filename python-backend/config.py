@@ -9,11 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = Path(__file__).resolve().parent
 STORAGE_DIR = BACKEND_DIR / "storage"
 
-ARENA_BASE_URL = "https://staging.stair-ai.com"
+ARENA_BASE_URL = os.environ.get("ARENA_BASE_URL", "https://stair-ai.com").rstrip("/")
 SUPABASE_URL = "https://ezvbmtvrvzageqixvdak.supabase.co"
 SUPABASE_KEY = "sb_publishable__m8bOkD05ToFwATpaWST5w_2-3fGS7V"
 
-OPENROUTER_MODEL = "deepseek/deepseek-v4-flash"
+OPENROUTER_MODEL = "deepseek/deepseek-v4-pro"
+WEB_SEARCH_BACKEND = os.environ.get("WEB_SEARCH_BACKEND", "google")
 
 SPORTMONKS_SEASON_ID = 26618
 DEFAULT_FIXTURE_ID = 19609127
@@ -41,9 +42,9 @@ def load_env() -> None:
 
 
 def arena_headers() -> dict[str, str]:
-    arena_key = os.environ.get("ARENA_KEY")
+    arena_key = os.environ.get("ARENA_KEY") or os.environ.get("ARENA_API_KEY")
     if not arena_key:
-        raise RuntimeError("Missing ARENA_KEY in .env")
+        raise RuntimeError("Missing ARENA_KEY or ARENA_API_KEY in .env")
     return {"x-api-key": arena_key}
 
 
@@ -61,7 +62,12 @@ def build_openrouter_model() -> OpenRouter:
     if not openrouter_api_key:
         raise RuntimeError("Missing OPENROUTER_API_KEY in .env")
 
-    return OpenRouter(
+    model = OpenRouter(
         id=OPENROUTER_MODEL,
         api_key=openrouter_api_key,
     )
+    # Agno's OpenRouter wrapper carries a hidden default max_tokens=1024.
+    # Clear both request caps on our instance so the provider decides the limit.
+    model.max_tokens = None
+    model.max_completion_tokens = None
+    return model

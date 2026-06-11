@@ -1,7 +1,7 @@
-https://staging.stair-ai.com/builder-guide
-https://staging.stair-ai.com/api
+https://stair-ai.com/builder-guide
+https://stair-ai.com/api
 https://stair-ai.gitbook.io/stair-ai-docs
-https://staging.stair-ai.com/api#tag/agents/PATCH/v1/arena/agents/me
+https://stair-ai.com/api#tag/agents/PATCH/v1/arena/agents/me
 
 agno framework/ sdk docs link :-
 https://docs.agno.com/models/providers/gateways/openrouter/overview
@@ -21,13 +21,13 @@ https://platform.xiaomimimo.com/docs/en-US/usage-guide/multimodal-understanding/
 https://platform.xiaomimimo.com/docs/en-US/usage-guide/passing-back-reasoning_content
 
 https://docs.sportmonks.com/v3 
-https://staging.stair-ai.com/builder-guide#data
-https://staging.stair-ai.com/builder-guide#data-sportmonks
-https://staging.stair-ai.com/builder-guide#data-supabase
+https://stair-ai.com/builder-guide#data
+https://stair-ai.com/builder-guide#data-sportmonks
+https://stair-ai.com/builder-guide#data-supabase
 https://supabase.com/docs/guides/api
 https://polymarket.com/sports/world-cup/games
 https://docs.polymarket.com/
-https://staging.stair-ai.com/builder-guide#data-polymarket
+https://stair-ai.com/builder-guide#data-polymarket
 
 sportmonks links :-
 https://docs.sportmonks.com/v3/welcome/what-can-you-do-with-sportmonks-data
@@ -49,11 +49,11 @@ https://docs.polymarket.com/market-makers/trading
 
 
 stair ai api links :-
-https://staging.stair-ai.com/api#tag/orders/POST/v1/arena/orders
-https://staging.stair-ai.com/api#tag/orders/POST/v1/arena/orders/{order_id}/close
-https://staging.stair-ai.com/api#tag/orders/GET/v1/arena/exposure
-https://staging.stair-ai.com/api#tag/orders/GET/v1/arena/orders/{order_id}
-https://staging.stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/listings
-https://staging.stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/markets/{fixture_code}
-https://staging.stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/markets/{fixture_code}/settlement
-https://staging.stair-ai.com/api#tag/proxy
+https://stair-ai.com/api#tag/orders/POST/v1/arena/orders
+https://stair-ai.com/api#tag/orders/POST/v1/arena/orders/{order_id}/close
+https://stair-ai.com/api#tag/orders/GET/v1/arena/exposure
+https://stair-ai.com/api#tag/orders/GET/v1/arena/orders/{order_id}
+https://stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/listings
+https://stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/markets/{fixture_id}
+https://stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/markets/{fixture_id}/settlement
+https://stair-ai.com/api#tag/proxy

@@ -5,43 +5,6 @@ from statistics import mean
 from typing import Any
 
 
-SPORTMONKS_PREDICTION_TYPES: dict[int, str] = {
-    231: "BTTS_PROBABILITY",
-    232: "HTFT_PROBABILITY",
-    233: "FIRST_HALF_WINNER_PROBABILITY",
-    234: "OVER_UNDER_1_5_PROBABILITY",
-    235: "OVER_UNDER_2_5_PROBABILITY",
-    236: "OVER_UNDER_3_5_PROBABILITY",
-    237: "FULLTIME_RESULT_PROBABILITY",
-    238: "TEAM_TO_SCORE_FIRST_PROBABILITY",
-    239: "DOUBLE_CHANCE_PROBABILITY",
-    240: "CORRECT_SCORE_PROBABILITY",
-    241: "HISTORICAL_LOG_LOSS",
-    242: "MODEL_HIT_RATIO",
-    243: "MODEL_PREDICTABILITY",
-    244: "MODEL_PREDICTIVE_POWER",
-    245: "MODELS_LOG_LOSS",
-    326: "HOME_OVER_UNDER_3_5_PROBABILITY",
-    327: "AWAY_OVER_UNDER_3_5_PROBABILITY",
-    328: "AWAY_OVER_UNDER_2_5_PROBABILITY",
-    330: "HOME_OVER_UNDER_2_5_PROBABILITY",
-    331: "HOME_OVER_UNDER_1_5_PROBABILITY",
-    332: "AWAY_OVER_UNDER_1_5_PROBABILITY",
-    333: "AWAY_OVER_UNDER_0_5_PROBABILITY",
-    334: "HOME_OVER_UNDER_0_5_PROBABILITY",
-    335: "OVER_UNDER_0_5_PROBABILITY",
-    1585: "CORNERS_OVER_UNDER_10_5_PROBABILITY",
-    1679: "OVER_UNDER_4_5_PROBABILITY",
-    1683: "CORNERS_OVER_UNDER_5_PROBABILITY",
-    1684: "CORNERS_OVER_UNDER_11_PROBABILITY",
-    1685: "CORNERS_OVER_UNDER_6_PROBABILITY",
-    1686: "CORNERS_OVER_UNDER_7_PROBABILITY",
-    1687: "CORNERS_OVER_UNDER_9_PROBABILITY",
-    1688: "CORNERS_OVER_UNDER_10_PROBABILITY",
-    1689: "CORNERS_OVER_UNDER_8_PROBABILITY",
-    1690: "CORNERS_OVER_UNDER_4_PROBABILITY",
-}
-
 MATCH_RESULT_MARKET_IDS = {1}
 MATCH_RESULT_MARKET_NAMES = {
     "fulltime result",
@@ -99,79 +62,6 @@ def _outcome_key(label: Any, home_code: str | None, away_code: str | None) -> st
     if normalized in {"2", "away", "away team", str(away_code or "").lower()}:
         return away_code
     return None
-
-
-def prediction_type_name(type_id: Any) -> str | None:
-    try:
-        return SPORTMONKS_PREDICTION_TYPES.get(int(type_id))
-    except (TypeError, ValueError):
-        return None
-
-
-def extract_prediction_features(
-    prediction_rows: list[dict[str, Any]],
-    home_code: str | None,
-    away_code: str | None,
-) -> dict[str, Any]:
-    typed_rows = []
-    by_type: dict[str, Any] = {}
-
-    for row in prediction_rows:
-        type_id = row.get("type_id")
-        type_name = prediction_type_name(type_id) or f"UNKNOWN_{type_id}"
-        predictions = row.get("predictions") or {}
-        typed_rows.append({"type_id": type_id, "type": type_name, "predictions": predictions})
-        by_type[type_name] = predictions
-
-    fulltime_raw = by_type.get("FULLTIME_RESULT_PROBABILITY") or {}
-    fulltime = None
-    if home_code and away_code and fulltime_raw:
-        fulltime = {
-            home_code: _probability(fulltime_raw.get("home")),
-            "draw": _probability(fulltime_raw.get("draw")),
-            away_code: _probability(fulltime_raw.get("away")),
-        }
-
-    correct_score_raw = by_type.get("CORRECT_SCORE_PROBABILITY") or {}
-    scores = correct_score_raw.get("scores") if isinstance(correct_score_raw, dict) else None
-    top_scores = []
-    if isinstance(scores, dict):
-        for score, probability in scores.items():
-            parsed = _probability(probability)
-            if parsed is not None:
-                top_scores.append({"score": str(score), "probability": parsed})
-        top_scores = sorted(top_scores, key=lambda row: row["probability"], reverse=True)[:5]
-
-    return {
-        "prediction_type_count": len(typed_rows),
-        "prediction_types_seen": sorted({row["type"] for row in typed_rows}),
-        "fulltime_result_probability": fulltime,
-        "btts_probability": _yes_no(by_type.get("BTTS_PROBABILITY")),
-        "over_under_2_5_probability": _yes_no(by_type.get("OVER_UNDER_2_5_PROBABILITY")),
-        "double_chance_probability": _probability_dict(by_type.get("DOUBLE_CHANCE_PROBABILITY")),
-        "team_to_score_first_probability": _probability_dict(by_type.get("TEAM_TO_SCORE_FIRST_PROBABILITY")),
-        "correct_score_top": top_scores,
-        "model_quality": {
-            "historical_log_loss": _as_float(by_type.get("HISTORICAL_LOG_LOSS")),
-            "model_hit_ratio": _as_float(by_type.get("MODEL_HIT_RATIO")),
-            "model_predictability": _as_float(by_type.get("MODEL_PREDICTABILITY")),
-            "model_predictive_power": _as_float(by_type.get("MODEL_PREDICTIVE_POWER")),
-            "models_log_loss": _as_float(by_type.get("MODELS_LOG_LOSS")),
-        },
-        "typed_prediction_rows": typed_rows,
-    }
-
-
-def _yes_no(value: Any) -> dict[str, float | None] | None:
-    if not isinstance(value, dict):
-        return None
-    return {"yes": _probability(value.get("yes")), "no": _probability(value.get("no"))}
-
-
-def _probability_dict(value: Any) -> dict[str, float | None] | None:
-    if not isinstance(value, dict):
-        return None
-    return {str(key): _probability(probability) for key, probability in value.items()}
 
 
 def extract_match_odds_features(
@@ -287,34 +177,32 @@ def extract_factual_context(
     home: dict[str, Any],
     away: dict[str, Any],
 ) -> dict[str, Any]:
-    weather = (
-        fixture.get("weatherreport")
-        or fixture.get("weather_report")
-        or _metadata_value(fixture, {"weather", "temperature", "wind", "humidity"})
-    )
     lineups = fixture.get("lineups") or []
     sidelined = fixture.get("sidelined") or []
     coaches = fixture.get("coaches") or []
     referees = fixture.get("referees") or []
 
-    return {
+    context = {
         "kickoff": fixture.get("starting_at"),
         "venue": fixture.get("venue"),
         "stage": fixture.get("stage"),
         "round": fixture.get("round"),
-        "weather": weather,
-        "weather_source": "metadata" if weather and not (fixture.get("weatherreport") or fixture.get("weather_report")) else "weather_report",
-        "lineups_available": bool(lineups),
-        "lineup_count": len(lineups) if isinstance(lineups, list) else None,
-        "sidelined_available": bool(sidelined),
-        "sidelined_count": len(sidelined) if isinstance(sidelined, list) else None,
-        "coaches": coaches,
-        "referees": referees,
         "teams": {
             "home": {"id": home.get("id"), "name": home.get("name"), "short_code": home.get("short_code")},
             "away": {"id": away.get("id"), "name": away.get("name"), "short_code": away.get("short_code")},
         },
     }
+    if lineups:
+        context["lineups"] = lineups
+        context["lineup_count"] = len(lineups) if isinstance(lineups, list) else None
+    if sidelined:
+        context["sidelined"] = sidelined
+        context["sidelined_count"] = len(sidelined) if isinstance(sidelined, list) else None
+    if coaches:
+        context["coaches"] = coaches
+    if referees:
+        context["referees"] = referees
+    return {key: value for key, value in context.items() if value not in (None, [], {})}
 
 
 def build_sportmonks_features(fixture: dict[str, Any]) -> dict[str, Any]:
@@ -324,29 +212,15 @@ def build_sportmonks_features(fixture: dict[str, Any]) -> dict[str, Any]:
     home_code = home.get("short_code")
     away_code = away.get("short_code")
 
-    prediction_features = extract_prediction_features(fixture.get("predictions") or [], home_code, away_code)
     odds_features = extract_match_odds_features(fixture.get("odds") or [], home_code, away_code)
     xg_features = extract_xg_features(fixture.get("xgfixture") or [], home.get("id"), away.get("id"), home_code, away_code)
     factual_context = extract_factual_context(fixture, home, away)
 
-    data_quality = {
-        "participants": "available" if home and away else "missing",
-        "fulltime_result_probability": "available" if prediction_features.get("fulltime_result_probability") else "missing",
-        "match_result_odds": "available" if odds_features.get("match_result_vig_free_consensus") else "missing",
-        "expected_goals": "available" if xg_features else "missing",
-        "lineups": "available" if fixture.get("lineups") else "missing",
-        "sidelined": "available" if fixture.get("sidelined") else "missing",
-        "weather": "available" if factual_context.get("weather") else "missing",
-        "venue": "available" if factual_context.get("venue") else "missing",
-        "coaches": "available" if factual_context.get("coaches") else "missing",
-        "referees": "available" if factual_context.get("referees") else "missing",
-    }
-
-    return {
+    features = {
         "participant_codes": {"home": home_code, "away": away_code},
-        "predictions": prediction_features,
         "odds": odds_features,
-        "expected_goals": xg_features,
         "factual_context": factual_context,
-        "data_quality": data_quality,
     }
+    if xg_features:
+        features["expected_goals"] = xg_features
+    return features

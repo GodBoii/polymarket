@@ -1,13 +1,18 @@
 import json
 import time
 import uuid
+from decimal import Decimal, ROUND_DOWN
 from typing import Any
 
 import requests
 from agno.tools import Toolkit
 
 from config import ARENA_BASE_URL, SPORTMONKS_SEASON_ID, SUPABASE_URL, arena_headers, supabase_key
+from http_logging import request as logged_request
 from utils import parse_token_ids
+
+PRICE_TICK = Decimal("0.001")
+USD_TICK = Decimal("0.01")
 
 
 class ArenaDataToolkit(Toolkit):
@@ -22,7 +27,9 @@ class ArenaDataToolkit(Toolkit):
                 self.get_polymarket_mapping,
                 self.get_polymarket_event,
                 self.get_polymarket_midpoint,
+                self.get_polymarket_listings,
                 self.get_arena_polymarket_market,
+                self.get_arena_polymarket_settlement,
                 self.get_supabase_catalog,
                 self.get_supabase_rows,
             ],
@@ -31,23 +38,25 @@ class ArenaDataToolkit(Toolkit):
     def get_sportmonks_schedule(self, season_id: int = SPORTMONKS_SEASON_ID) -> dict[str, Any]:
         """Fetch the World Cup schedule from Sportmonks through the Stair AI proxy."""
         url = f"{ARENA_BASE_URL}/api/v1/data/proxy/sportmonks/v3/football/schedules/seasons/{season_id}"
-        response = requests.get(url, headers=arena_headers(), timeout=30)
+        response = logged_request("GET", url, headers=arena_headers(), timeout=30)
         response.raise_for_status()
         return response.json()
 
     def get_sportmonks_fixture(self, fixture_id: int, include: str | None = None) -> dict[str, Any]:
-        """Fetch fixture participants, predictions, odds and xG from Sportmonks through the Stair AI proxy."""
+        """Fetch fixture evidence from Sportmonks through the Stair AI proxy."""
         url = f"{ARENA_BASE_URL}/api/v1/data/proxy/sportmonks/v3/football/fixtures/{fixture_id}"
-        response = requests.get(
+        response = logged_request(
+            "GET",
             url,
-            params={"include": include or "participants;league;predictions;odds;xGFixture;venue;metadata;lineups;sidelined;coaches;referees;stage;round"},
+            params={"include": include or "participants;league;odds;xGFixture;venue;metadata;lineups;sidelined;coaches;referees;stage;round"},
             headers=arena_headers(),
             timeout=60,
         )
         if response.status_code >= 400 and include is None:
-            response = requests.get(
+            response = logged_request(
+                "GET",
                 url,
-                params={"include": "participants;predictions;odds;xGFixture"},
+                params={"include": "participants;odds;xGFixture"},
                 headers=arena_headers(),
                 timeout=60,
             )
@@ -56,7 +65,8 @@ class ArenaDataToolkit(Toolkit):
 
     def get_sportmonks_head_to_head(self, home_team_id: int, away_team_id: int, limit: int = 10) -> dict[str, Any]:
         """Fetch recent direct meetings between two Sportmonks teams."""
-        response = requests.get(
+        response = logged_request(
+            "GET",
             f"{ARENA_BASE_URL}/api/v1/data/proxy/sportmonks/v3/football/fixtures/head-to-head/{home_team_id}/{away_team_id}",
             params={"include": "participants;scores;league;state", "per_page": str(limit), "order": "desc"},
             headers=arena_headers(),
@@ -67,7 +77,8 @@ class ArenaDataToolkit(Toolkit):
 
     def get_sportmonks_live_standings(self, league_id: int) -> dict[str, Any]:
         """Fetch live standings for a Sportmonks league when available."""
-        response = requests.get(
+        response = logged_request(
+            "GET",
             f"{ARENA_BASE_URL}/api/v1/data/proxy/sportmonks/v3/football/standings/live/leagues/{league_id}",
             params={"include": "participant;details"},
             headers=arena_headers(),
@@ -78,7 +89,8 @@ class ArenaDataToolkit(Toolkit):
 
     def get_polymarket_mapping(self, fixture_id: int) -> dict[str, Any]:
         """Fetch the curated Sportmonks fixture to Polymarket event mapping."""
-        response = requests.get(
+        response = logged_request(
+            "GET",
             f"{ARENA_BASE_URL}/api/v1/web/mapping",
             params={"fixture_id": fixture_id},
             headers=arena_headers(),
@@ -89,7 +101,8 @@ class ArenaDataToolkit(Toolkit):
 
     def get_polymarket_event(self, event_slug: str) -> dict[str, Any]:
         """Fetch a Polymarket Gamma event by slug through the Stair AI proxy."""
-        response = requests.get(
+        response = logged_request(
+            "GET",
             f"{ARENA_BASE_URL}/api/v1/data/proxy/polymarket-gamma/events",
             params={"slug": event_slug},
             headers=arena_headers(),
@@ -100,7 +113,8 @@ class ArenaDataToolkit(Toolkit):
 
     def get_polymarket_midpoint(self, token_id: str) -> dict[str, Any]:
         """Fetch a Polymarket CLOB midpoint for a YES/NO token through the Stair AI proxy."""
-        response = requests.get(
+        response = logged_request(
+            "GET",
             f"{ARENA_BASE_URL}/api/v1/data/proxy/polymarket-clob/midpoint",
             params={"token_id": token_id},
             headers=arena_headers(),
@@ -110,9 +124,32 @@ class ArenaDataToolkit(Toolkit):
         return response.json()
 
     def get_arena_polymarket_market(self, fixture_code: str) -> dict[str, Any]:
-        """Fetch arena-normalized Polymarket market data for a fixture code."""
-        response = requests.get(
+        """Fetch arena-normalized Polymarket market data for a fixture id."""
+        response = logged_request(
+            "GET",
             f"{ARENA_BASE_URL}/api/v1/data/polymarket/markets/{fixture_code}",
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_arena_polymarket_settlement(self, fixture_code: str) -> dict[str, Any]:
+        """Fetch arena-normalized settlement data for a fixture id."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/data/polymarket/markets/{fixture_code}/settlement",
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_polymarket_listings(self) -> dict[str, Any]:
+        """Fetch fixture ids with arena-normalized Polymarket markets."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/data/polymarket/listings",
             headers=arena_headers(),
             timeout=30,
         )
@@ -121,7 +158,8 @@ class ArenaDataToolkit(Toolkit):
 
     def get_supabase_catalog(self) -> list[dict[str, Any]]:
         """Fetch the Supabase catalog describing available World Cup Arena tables."""
-        response = requests.get(
+        response = logged_request(
+            "GET",
             f"{SUPABASE_URL}/rest/v1/catalog_tables",
             params={"select": "table_name,description,row_count", "order": "table_name.asc"},
             headers={"apikey": supabase_key()},
@@ -147,7 +185,8 @@ class ArenaDataToolkit(Toolkit):
         if filters:
             params.update(filters)
 
-        response = requests.get(
+        response = logged_request(
+            "GET",
             f"{SUPABASE_URL}/rest/v1/{table_name}",
             params=params,
             headers=headers,
@@ -164,6 +203,8 @@ class ArenaTradingToolkit(Toolkit):
             name="arena_trading",
             tools=[
                 self.get_agent_profile,
+                self.sync_agent_profile,
+                self.get_match,
                 self.get_exposure,
                 self.submit_order,
                 self.get_order_status,
@@ -173,16 +214,53 @@ class ArenaTradingToolkit(Toolkit):
 
     def get_agent_profile(self) -> dict[str, Any]:
         """Fetch authenticated arena agent and wallet details."""
-        response = requests.get(f"{ARENA_BASE_URL}/api/v1/arena/agents/me", headers=arena_headers(), timeout=30)
+        response = logged_request("GET", f"{ARENA_BASE_URL}/api/v1/arena/agents/me", headers=arena_headers(), timeout=30)
         response.raise_for_status()
         return response.json()
 
-    def get_exposure(self, fixture_code: str | None = None) -> dict[str, Any]:
-        """Fetch open exposure, optionally filtered by fixture code."""
-        params = {"fixture_code": fixture_code} if fixture_code else None
-        response = requests.get(
+    def sync_agent_profile(
+        self,
+        display_name: str = "POLYCOGNITIVE (POLY-09)",
+        bio: str = "World Cup Arena prediction-market agent combining Sportmonks context, historical priors, Polymarket prices, exposure checks, and a full Reasoning Ledger trace before acting.",
+        avatar_url: str | None = None,
+        site: str | None = None,
+        twitter: str | None = None,
+    ) -> dict[str, Any]:
+        """Update the authenticated Stair AI agent profile resolved from the API key."""
+        payload: dict[str, Any] = {"display_name": display_name, "bio": bio}
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        social = {key: value for key, value in {"site": site, "twitter": twitter}.items() if value}
+        if social:
+            payload["social"] = social
+        response = logged_request(
+            "PATCH",
+            f"{ARENA_BASE_URL}/api/v1/arena/agents/me",
+            headers=arena_headers(),
+            json_body=payload,
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_exposure(self, fixture_id: str | None = None) -> dict[str, Any]:
+        """Fetch open exposure, optionally filtered by fixture id."""
+        params = {"fixture_id": fixture_id} if fixture_id else None
+        response = logged_request(
+            "GET",
             f"{ARENA_BASE_URL}/api/v1/arena/exposure",
             params=params,
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_match(self, fixture_id: str | int) -> dict[str, Any]:
+        """Fetch arena match timing and currently open prediction window."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/arena/matches/{fixture_id}",
             headers=arena_headers(),
             timeout=30,
         )
@@ -199,21 +277,23 @@ class ArenaTradingToolkit(Toolkit):
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
         """Submit a buy-YES arena order, or return the payload when dry_run is enabled."""
+        normalized_tif = max(1, min(int(time_in_force_seconds), 3600))
         payload = {
-            "fixture_code": fixture_code,
+            "fixture_id": fixture_code,
             "team_code": team_code,
-            "usd_size": usd_size,
-            "limit_price": limit_price,
-            "time_in_force_seconds": time_in_force_seconds,
+            "usd_size": normalize_usd_size(usd_size),
+            "limit_price": normalize_limit_price(limit_price),
+            "time_in_force_seconds": normalized_tif,
             "idempotency_key": idempotency_key or str(uuid.uuid4()),
         }
         if self.dry_run:
             return {"dry_run": True, "submitted": False, "payload": payload}
 
-        response = requests.post(
+        response = logged_request(
+            "POST",
             f"{ARENA_BASE_URL}/api/v1/arena/orders",
             headers=arena_headers(),
-            json=payload,
+            json_body=payload,
             timeout=60,
         )
         response.raise_for_status()
@@ -221,7 +301,8 @@ class ArenaTradingToolkit(Toolkit):
 
     def get_order_status(self, order_id: str) -> dict[str, Any]:
         """Fetch arena order status by order ID."""
-        response = requests.get(
+        response = logged_request(
+            "GET",
             f"{ARENA_BASE_URL}/api/v1/arena/orders/{order_id}",
             headers=arena_headers(),
             timeout=30,
@@ -231,14 +312,15 @@ class ArenaTradingToolkit(Toolkit):
 
     def close_order(self, order_id: str, limit_price: float, idempotency_key: str | None = None) -> dict[str, Any]:
         """Submit a close order, or return the payload when dry_run is enabled."""
-        payload = {"limit_price": limit_price, "idempotency_key": idempotency_key or str(uuid.uuid4())}
+        payload = {"limit_price": normalize_limit_price(limit_price), "idempotency_key": idempotency_key or str(uuid.uuid4())}
         if self.dry_run:
             return {"dry_run": True, "submitted": False, "order_id": order_id, "payload": payload}
 
-        response = requests.post(
+        response = logged_request(
+            "POST",
             f"{ARENA_BASE_URL}/api/v1/arena/orders/{order_id}/close",
             headers=arena_headers(),
-            json=payload,
+            json_body=payload,
             timeout=60,
         )
         response.raise_for_status()
@@ -248,7 +330,7 @@ class ArenaTradingToolkit(Toolkit):
 class ArenaLedgerToolkit(Toolkit):
     def __init__(self, dry_run: bool = True) -> None:
         self.dry_run = dry_run
-        super().__init__(name="arena_ledger", tools=[self.submit_ledger_batch])
+        super().__init__(name="arena_ledger", tools=[self.submit_ledger_batch, self.get_ledger_trace])
 
     def submit_ledger_batch(self, records: list[dict[str, Any]]) -> dict[str, Any]:
         """Submit up to 50 reasoning ledger records, or return them when dry_run is enabled."""
@@ -256,11 +338,27 @@ class ArenaLedgerToolkit(Toolkit):
         if self.dry_run:
             return {"dry_run": True, "submitted": False, "record_count": len(records), "payload": payload}
 
-        response = requests.post(
+        response = logged_request(
+            "POST",
             f"{ARENA_BASE_URL}/api/v1/arena/ledger/records/batch",
             headers=arena_headers(),
-            json=payload,
+            json_body=payload,
             timeout=60,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_ledger_trace(self, before: str | None = None, limit: int = 50) -> dict[str, Any]:
+        """Fetch recent ledger records for the authenticated agent for diagnostics."""
+        params: dict[str, Any] = {"limit": max(1, min(int(limit), 500))}
+        if before:
+            params["before"] = before
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/arena/ledger/traces",
+            params=params,
+            headers=arena_headers(),
+            timeout=30,
         )
         response.raise_for_status()
         return response.json()
@@ -309,6 +407,20 @@ def build_moneyline_from_gamma(gamma_payload: dict[str, Any]) -> dict[str, Any]:
         },
         "markets": markets,
     }
+
+
+def normalize_limit_price(value: Any) -> float:
+    price = Decimal(str(value)).quantize(PRICE_TICK, rounding=ROUND_DOWN)
+    if price <= 0:
+        price = PRICE_TICK
+    if price >= 1:
+        price = Decimal("0.999")
+    return float(price)
+
+
+def normalize_usd_size(value: Any) -> str:
+    amount = Decimal(str(value)).quantize(USD_TICK, rounding=ROUND_DOWN)
+    return f"{amount:.2f}"
 
 
 def new_ledger_record(session_id: str, behavior: str, **fields: Any) -> dict[str, Any]:

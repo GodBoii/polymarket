@@ -25,3 +25,5 @@ verify-stdout.txt
 typecheck.txt
 verify-shots/
 task.md
+api-1.json
+docker_logs.txt

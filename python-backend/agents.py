@@ -1,266 +1,109 @@
-from typing import Any
-
 from agno.agent import Agent
 from agno.db.json import JsonDb
+from agno.team import Team
+from agno.tools.websearch import WebSearchTools
 
-from config import build_openrouter_model
+from config import WEB_SEARCH_BACKEND, build_openrouter_model
+from polycognitive_tools import FixtureSelectionToolkit, PolycognitiveToolkit
 
 
-JSON_RULES = [
-    "Return only valid JSON.",
-    "Do not wrap the JSON in markdown fences.",
-    "Use null when a value is unavailable.",
-    "Be explicit about data gaps and confidence.",
+NATURAL_RESPONSE_RULES = [
+    "You may respond naturally in concise Markdown.",
+    "Do not expose private chain-of-thought. Share a concise decision summary, evidence, confidence, and action taken.",
+]
+
+ULTRA_THINK_RULES = [
+    "ULTRA THINK: Before acting, pause and reason step by step; do not rush to a conclusion.",
+    "Think deeply and for longer than you normally would. Consider every angle before deciding.",
+    "Reason through the problem sequentially: (1) gather all available data, (2) weigh the evidence, (3) form a probability estimate, (4) compare to market price, (5) decide action.",
+    "Use all available information and context - match data, team form, injuries, historical results, weather, Polymarket odds, and web search results - to form a well-reasoned opinion.",
+    "Synthesize the evidence to explicitly judge which team is stronger and has a higher probability of winning. State your reasoning clearly before placing any bet.",
+]
+
+BUDGET_RULES = [
+    "Total budget is $100 USDC. Do not exceed this across all bets in a session.",
+    "Minimum bet size is $1 USDC. Never place an order below $1.",
+    "Maximum bet size is $5 USDC per order. Never place a single bet above $5.",
+    "We need more than 10 bets across the $100 bankroll, so keep sizing compact: $1-2 for weak or uncertain edges, $3-4 for moderate edges, and use $5 only for the clearest opportunities.",
+    "Always check current exposure before betting to avoid exceeding budget or duplicating risk.",
+]
+
+SEARCH_RULES = [
+    "Use the shared web search toolkit when you need current external information.",
+    "Search with focused queries and summarize the takeaway instead of copying large search result dumps, long lineups, or long tables into the final answer.",
 ]
 
 
-def make_agent(name: str, role: str, db: JsonDb, session_id: str) -> Agent:
+def build_web_search_tools() -> WebSearchTools:
+    return WebSearchTools(
+        backend=WEB_SEARCH_BACKEND,
+        timeout=15,
+        fixed_max_results=5,
+        region="us-en",
+    )
+
+
+def fixture_agent(db: JsonDb, session_id: str, fixture_tools: FixtureSelectionToolkit) -> Agent:
     return Agent(
-        name=name,
+        name="fixture_agent",
+        role="Select one World Cup football fixture for POLYCOGNITIVE to analyze.",
         model=build_openrouter_model(),
         db=db,
-        session_id=session_id,
+        session_id=f"{session_id}:fixture_agent",
         user_id="polymarket-arena-builder",
-        description=role,
-        instructions=JSON_RULES,
-        markdown=False,
+        tools=[fixture_tools, build_web_search_tools()],
+        instructions=[
+            *NATURAL_RESPONSE_RULES,
+            *ULTRA_THINK_RULES,
+            *SEARCH_RULES,
+            "Call get_worldcup_fixture_candidates before selecting a fixture.",
+            "Choose the strongest fixture using named teams, kickoff timing, venue/weather context, Polymarket mapping, market count, midpoint count, and odds coverage.",
+            "Prefer fixtures with tradable prices and enough football context for a decisive bet.",
+            "Return the chosen fixture id plainly using the text `fixture_id: <number>` and explain the reason briefly.",
+            f"If you need any additional information (team news, injuries, form, weather, odds, or other context), use WebSearchTools with the configured `{WEB_SEARCH_BACKEND}` backend.",
+        ],
+        markdown=True,
         telemetry=False,
         debug_mode=True,
     )
 
 
-def fixture_selector_agent(db: JsonDb, session_id: str) -> Agent:
-    return make_agent(
-        "Fixture Selector",
-        "Select and normalize the target football fixture identity for downstream agents.",
-        db,
-        session_id,
+def polycognitive_team(
+    db: JsonDb,
+    session_id: str,
+    fixture_tools: FixtureSelectionToolkit,
+    arena_tools: PolycognitiveToolkit,
+) -> Team:
+    selector = fixture_agent(db, session_id, fixture_tools)
+    return Team(
+        name="POLYCOGNITIVE (POLY-09)",
+        role="World Cup Arena prediction-market research and execution team.",
+        members=[selector],
+        model=build_openrouter_model(),
+        db=db,
+        session_id=session_id,
+        user_id="polymarket-arena-builder",
+        tools=[arena_tools, build_web_search_tools()],
+        instructions=[
+            *NATURAL_RESPONSE_RULES,
+            *ULTRA_THINK_RULES,
+            *BUDGET_RULES,
+            *SEARCH_RULES,
+            "First delegate fixture selection to fixture_agent and use its selected fixture_id.",
+            "Then call get_match_context for football and historical evidence.",
+            "Then call get_polymarket_context and get_current_exposure before any prediction or bet.",
+            "Always convert the evidence into a three-outcome probability view for home, draw, and away. Think deeply - which team is objectively stronger based on all available data? State your opinion explicitly.",
+            "Compare your probabilities to the available market prices and choose the best buy-YES outcome. Prefer backing the stronger team unless the market price makes it a poor value bet.",
+            "Submit a prediction to Stair AI with submit_prediction_to_stair before placing the bet.",
+            "Place a bet with place_bet on the best available outcome following the budget rules above.",
+            "Do not end the run without choosing an outcome unless order submission is technically impossible.",
+            "Use current exposure to avoid accidental duplicate risk, but if there is no duplicate exposure, take the best available bet.",
+            "Keep final output natural: selected fixture, evidence read, probability view, team strength opinion, market comparison, prediction submitted, bet placed, confidence, and main factors.",
+            f"If you need any additional information (live scores, breaking news, team updates, market trends, or any other context), use WebSearchTools with the configured `{WEB_SEARCH_BACKEND}` backend.",
+        ],
+        markdown=True,
+        telemetry=False,
+        debug_mode=True,
+        stream_member_events=True,
+        store_events=True,
     )
-
-
-def sportmonks_agent(db: JsonDb, session_id: str) -> Agent:
-    return make_agent(
-        "Sportmonks Research Agent",
-        "Digest Sportmonks football data into pre-game signals without looking at market prices.",
-        db,
-        session_id,
-    )
-
-
-def polymarket_agent(db: JsonDb, session_id: str) -> Agent:
-    return make_agent(
-        "Polymarket Market Agent",
-        "Digest Polymarket market data into pricing, implied probability, and execution handles.",
-        db,
-        session_id,
-    )
-
-
-def supabase_agent(db: JsonDb, session_id: str) -> Agent:
-    return make_agent(
-        "Supabase Historical Agent",
-        "Digest Supabase historical priors into team history and matchup signals.",
-        db,
-        session_id,
-    )
-
-
-def prediction_agent(db: JsonDb, session_id: str) -> Agent:
-    return make_agent(
-        "Prediction Agent",
-        "Make an independent match prediction from football and historical signals only.",
-        db,
-        session_id,
-    )
-
-
-def strategy_agent(db: JsonDb, session_id: str) -> Agent:
-    return make_agent(
-        "Strategy Agent",
-        "Compare an independent prediction to market prices and decide trade or no-trade.",
-        db,
-        session_id,
-    )
-
-
-def prompt_for_fixture_selection(target_fixture_id: int, schedule_summary: dict[str, Any]) -> str:
-    return f"""
-Select the target fixture and return this schema:
-{{
-  "fixture_id": int,
-  "fixture_code": str,
-  "selection_reason": str,
-  "schedule_entries_seen": int
-}}
-
-Target fixture id: {target_fixture_id}
-Schedule summary: {schedule_summary}
-"""
-
-
-def prompt_for_sportmonks_digest(fixture_context: dict[str, Any]) -> str:
-    return f"""
-Digest the Sportmonks pre-game data for one fixture.
-
-Prefer the decoded `features` object when it is available. In particular:
-- Treat `features.predictions.fulltime_result_probability` as a weak baseline signal, not a reliable forecast by itself.
-- Do not treat `FIRST_HALF_WINNER_PROBABILITY` or `TEAM_TO_SCORE_FIRST_PROBABILITY` as full-time win/draw/loss.
-- Use `features.odds.match_result_vig_free_consensus` for bookmaker consensus, because it is filtered to match-result odds and has bookmaker margin removed.
-- Use `features.factual_context` for kickoff time, venue, weather metadata, lineup availability, sidelined players, coaches, referees, stage, and round.
-- Use `enrichment.head_to_head` and `enrichment.live_standings` as supporting context when available.
-- Use raw `prediction_rows` and `match_result_odds_rows` only as audit/detail context.
-- Explicitly flag when Sportmonks ML probabilities are the only non-market football signal available.
-
-Return this schema:
-{{
-  "source": "sportmonks",
-  "fixture": str,
-  "fixture_id": int,
-  "home_team": str,
-  "away_team": str,
-  "home_code": str,
-  "away_code": str,
-  "available_signals": [str],
-  "probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}},
-  "bookmaker_consensus_probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}}|null,
-  "expected_goals": {{"HOME_TEAM_CODE": float|null, "AWAY_TEAM_CODE": float|null}}|null,
-  "factual_context_summary": str|null,
-  "head_to_head_summary": str|null,
-  "standings_summary": str|null,
-  "ml_prediction_reliability": "weak_baseline"|"supported"|"not_used",
-  "bookmaker_count": int|null,
-  "confidence": "low"|"medium"|"high",
-  "data_gaps": [str],
-  "summary": str
-}}
-
-Probability values must be decimals from 0 to 1, not percentages.
-Use the actual team short codes as probability keys. Do not use placeholder keys like HOME_CODE, HOME_TEAM_CODE, AWAY_CODE, or AWAY_TEAM_CODE.
-
-Context:
-{fixture_context}
-"""
-
-
-def prompt_for_polymarket_digest(market_context: dict[str, Any]) -> str:
-    return f"""
-Digest the Polymarket market data for one football fixture.
-
-Return this schema:
-{{
-  "source": "polymarket",
-  "event_slug": str|null,
-  "event_title": str|null,
-  "implied_probabilities": {{"HOME_TEAM_CODE": float|null, "draw": float|null, "AWAY_TEAM_CODE": float|null}},
-  "sum_implied_probability": float|null,
-  "execution_handles": [
-    {{"outcome": str, "condition_id": str|null, "yes_token_id": str|null, "mid": float|null}}
-  ],
-  "pricing_available": bool,
-  "data_gaps": [str],
-  "summary": str
-}}
-
-Context:
-{market_context}
-"""
-
-
-def prompt_for_supabase_digest(history_context: dict[str, Any]) -> str:
-    return f"""
-Digest the Supabase historical priors for the two countries.
-
-Prefer the decoded `features` object when it is available. Use raw table rows as audit context.
-The `features` object summarizes arena historical country IDs, style priors, group-stage records,
-knockout patterns, special-match history, and direct H2H row availability.
-Use `statsbomb_open_data` as an optional historical factual fallback when Supabase aggregate rows are missing.
-Never join StatsBomb, Sportmonks, and Supabase by numeric country IDs; StatsBomb is joined only by explicit team-name aliases.
-
-Return this schema:
-{{
-  "source": "supabase",
-  "home_country": str,
-  "away_country": str,
-  "available_tables": [str],
-  "historical_signals": [
-    {{"signal": str, "home_value": str|float|null, "away_value": str|float|null, "interpretation": str}}
-  ],
-  "h2h_summary": str|null,
-  "confidence": "low"|"medium"|"high",
-  "data_gaps": [str],
-  "summary": str
-}}
-
-Context:
-{history_context}
-"""
-
-
-def prompt_for_prediction(sportmonks_digest: dict[str, Any], supabase_digest: dict[str, Any]) -> str:
-    return f"""
-Make an independent football prediction. Do not use Polymarket market prices.
-
-Important modeling rule:
-- Do not rely on Sportmonks ML probabilities as the primary basis for the prediction.
-- Treat Sportmonks ML as a weak baseline/calibration signal only.
-- If expected goals, recent form, lineup/news, H2H, standings, and Supabase historical priors are missing, confidence must be "low" and the rationale must say the prediction is not trade-grade.
-- Do not create high-conviction probabilities from ML output alone.
-
-Return this schema:
-{{
-  "fixture": str,
-  "outcome": str,
-  "probability": float,
-  "probabilities": {{"home": float, "draw": float, "away": float}},
-  "evidence_basis": "non_ml_supported"|"mixed"|"ml_primary"|"insufficient",
-  "trade_grade": bool,
-  "confidence_level": "low"|"medium"|"high",
-  "rationale": str,
-  "key_factors": [str],
-  "data_gaps": [str]
-}}
-
-Sportmonks digest:
-{sportmonks_digest}
-
-Supabase digest:
-{supabase_digest}
-"""
-
-
-def prompt_for_strategy(strategy_context: dict[str, Any]) -> str:
-    return f"""
-Decide whether to trade using a conservative $100 demo bankroll.
-
-Rules:
-- Evaluate every listed outcome, not only the most likely predicted outcome.
-- Edge = prediction probability for that outcome minus Polymarket implied probability for the same outcome.
-- Positive edge means the outcome's YES market appears underpriced and can be bought.
-- Negative edge means that specific YES market appears overpriced; do not buy that YES market.
-- If no outcome has positive edge of at least 5 percentage points, do not trade.
-- Maximum trade size is $5.
-- Stair arena orders are submitted as buy-YES orders using fixture_code/team_code. Therefore, when one outcome is overpriced, express the fade by buying YES on the underpriced alternative outcome with the best positive edge when one exists.
-- You may discuss a short/fade thesis in the rationale, but if should_trade=true the executable order must be direction="long", team_code must be the outcome to buy YES on, and limit_price must be near that outcome's YES mid.
-- limit_price should be near but not wildly above the market mid for the selected YES token.
-- If should_trade=false, direction must be "none", size_usdc must be "0", limit_price must be null, and team_code must be null.
-- If should_trade=true, direction must be "long", team_code must be one of the available outcome codes, size_usdc must be 1.00 to 5.00, and limit_price must be a number.
-- Prefer the provided `best_buy_yes` candidate when it exists, unless you can justify a more conservative no-trade due to low confidence or missing pricing.
-- Read `ml_prediction_risk` carefully. Sportmonks ML probabilities are public, usually weak for home/draw/away prediction, and can manipulate both humans and AI agents into overconfident analysis.
-- Do not let an edge that comes primarily from Sportmonks ML probabilities override missing factual evidence. You may still decide to trade, but the rationale must explicitly explain the factual, non-ML evidence supporting that decision.
-
-Return this schema:
-{{
-  "should_trade": bool,
-  "outcome": str,
-  "team_code": str|null,
-  "direction": "long"|"short"|"none",
-  "size_usdc": str,
-  "limit_price": float|null,
-  "edge_pp": float|null,
-  "confidence": "low"|"medium"|"high",
-  "rationale": str
-}}
-
-Strategy context:
-{strategy_context}
-"""

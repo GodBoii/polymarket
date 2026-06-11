@@ -1,4 +1,4 @@
-from scout import choose_best_candidate, edge_pp, flatten_schedule, score_candidate
+from scout import choose_best_candidate, edge_pp, flatten_schedule, odds_to_probability, score_candidate
 
 
 def test_flatten_schedule_walks_rounds_and_stage_fixtures():
@@ -37,7 +37,6 @@ def test_choose_best_candidate_prefers_data_rich_named_fixture():
         mapping_count=1,
         market_count=3,
         midpoint_count=3,
-        prediction_count=24,
         odds_count=1000,
     )
 
@@ -46,3 +45,9 @@ def test_choose_best_candidate_prefers_data_rich_named_fixture():
 
 def test_edge_pp_normalizes_percent_and_decimal_inputs():
     assert edge_pp(62, 0.55) == 7.0
+
+
+def test_odds_to_probability_keeps_large_decimal_odds_decimal():
+    assert round(odds_to_probability(25.0), 4) == 0.04
+    assert round(odds_to_probability("+120"), 4) == 0.4545
+    assert round(odds_to_probability("-150"), 4) == 0.6

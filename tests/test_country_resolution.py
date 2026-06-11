@@ -1,4 +1,4 @@
-from supabase_context import build_supabase_context
+from supabase_context import build_supabase_context, resolve_country_id
 
 
 class FakeData:
@@ -40,3 +40,13 @@ def test_supabase_context_resolves_arena_country_ids_from_team_codes():
     assert "ads_a_h2h_country" in context["tables"]
     assert context["tables"]["ads_a_country_style"] == [{"country_id": 147}, {"country_id": 211}]
     assert context["tables"]["ads_a_h2h_country"] == [{"country_id_a": 147, "country_id_b": 211, "total_matches": 1}]
+
+
+def test_unresolved_country_does_not_fallback_to_sportmonks_id():
+    fake = FakeData()
+
+    resolution = resolve_country_id(fake, "Unknown Team", "UNK", sportmonks_country_id=999999)
+
+    assert resolution["country_id"] is None
+    assert resolution["source"] == "unresolved"
+    assert resolution["sportmonks_country_id"] == 999999

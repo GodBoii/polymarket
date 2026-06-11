@@ -7,7 +7,7 @@ from agno.run.agent import RunStatus
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OPENROUTER_MODEL = "deepseek/deepseek-v4-flash"
+OPENROUTER_MODEL = "deepseek/deepseek-v4-pro"
 
 
 def load_env() -> None:

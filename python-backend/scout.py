@@ -68,7 +68,9 @@ def odds_to_probability(value: Any) -> float | None:
     odds = safe_float(value)
     if odds is None:
         return None
-    if odds > 20 or odds < 0:
+    # American odds are normally <= -100 or >= +100. Values like 25.0 are
+    # valid longshot decimal odds and must stay decimal, not become +25.
+    if odds >= 100 or odds <= -100:
         return american_to_probability(odds)
     return decimal_to_probability(odds)
 
@@ -87,7 +89,6 @@ def score_candidate(
     mapping_count: int = 0,
     market_count: int = 0,
     midpoint_count: int = 0,
-    prediction_count: int = 0,
     odds_count: int = 0,
 ) -> dict[str, Any]:
     now = now or datetime.now(timezone.utc)
@@ -112,9 +113,6 @@ def score_candidate(
     if midpoint_count:
         score += min(15, midpoint_count * 5)
         reasons.append(f"{midpoint_count} prices")
-    if prediction_count:
-        score += min(10, prediction_count / 3)
-        reasons.append(f"{prediction_count} SportMonks predictions")
     if odds_count:
         score += min(10, odds_count / 250)
         reasons.append(f"{odds_count} odds rows")
@@ -126,7 +124,6 @@ def score_candidate(
         "mapping_count": mapping_count,
         "market_count": market_count,
         "midpoint_count": midpoint_count,
-        "prediction_count": prediction_count,
         "odds_count": odds_count,
         "score_reasons": reasons,
     }

@@ -1,27 +1,19 @@
 from sportmonks_features import build_sportmonks_features
 
 
-def test_decodes_fulltime_probability_without_confusing_first_half():
+def test_prediction_rows_are_not_exposed():
     fixture = {
         "participants": [
             {"id": 10, "name": "Mexico", "short_code": "MEX", "meta": {"location": "home"}},
             {"id": 20, "name": "South Africa", "short_code": "ZAF", "meta": {"location": "away"}},
         ],
-        "predictions": [
-            {"type_id": 233, "predictions": {"home": 28.4, "draw": 46.08, "away": 25.52}},
-            {"type_id": 237, "predictions": {"home": 40.84, "draw": 27.78, "away": 31.38}},
-        ],
+        "predictions": [{"type_id": 237, "predictions": {"home": 40.84, "draw": 27.78, "away": 31.38}}],
     }
 
     features = build_sportmonks_features(fixture)
 
-    assert features["predictions"]["fulltime_result_probability"] == {
-        "MEX": 0.4084,
-        "draw": 0.2778,
-        "ZAF": 0.3138,
-    }
-    assert "FIRST_HALF_WINNER_PROBABILITY" in features["predictions"]["prediction_types_seen"]
-    assert "FULLTIME_RESULT_PROBABILITY" in features["predictions"]["prediction_types_seen"]
+    assert "predictions" not in features
+    assert "data_quality" not in features
 
 
 def test_match_result_odds_consensus_filters_props_and_removes_vig():
@@ -41,8 +33,7 @@ def test_match_result_odds_consensus_filters_props_and_removes_vig():
         ],
     }
 
-    features = build_sportmonks_features(fixture)
-    odds = features["odds"]
+    odds = build_sportmonks_features(fixture)["odds"]
 
     assert odds["match_result_row_count"] == 6
     assert odds["match_result_bookmaker_count"] == 2
@@ -53,7 +44,7 @@ def test_match_result_odds_consensus_filters_props_and_removes_vig():
     }
 
 
-def test_expected_goals_maps_participant_ids_to_team_codes():
+def test_expected_goals_is_included_only_when_available():
     fixture = {
         "participants": [
             {"id": 10, "name": "Mexico", "short_code": "MEX", "meta": {"location": "home"}},
@@ -68,31 +59,25 @@ def test_expected_goals_maps_participant_ids_to_team_codes():
     features = build_sportmonks_features(fixture)
 
     assert features["expected_goals"] == {"MEX": 1.62, "ZAF": 0.84}
-    assert features["data_quality"]["expected_goals"] == "available"
+    assert "expected_goals" not in build_sportmonks_features({"participants": fixture["participants"]})
 
 
-def test_factual_context_reads_weather_from_metadata():
+def test_factual_context_omits_absent_sections():
     fixture = {
         "starting_at": "2026-06-11 19:00:00",
         "participants": [
             {"id": 10, "name": "Mexico", "short_code": "MEX", "meta": {"location": "home"}},
             {"id": 20, "name": "South Africa", "short_code": "ZAF", "meta": {"location": "away"}},
         ],
-        "metadata": [
-            {"type": "weather", "value": {"temperature": 24, "description": "clear"}},
-        ],
+        "metadata": [{"type": "weather", "value": {"temperature": 24, "description": "clear"}}],
         "venue": {"name": "Estadio Azteca"},
         "lineups": [{"participant_id": 10, "formation": "4-3-3"}],
-        "sidelined": [{"participant_id": 20, "player_name": "Example Player"}],
     }
 
-    features = build_sportmonks_features(fixture)
-    factual = features["factual_context"]
+    factual = build_sportmonks_features(fixture)["factual_context"]
 
     assert factual["kickoff"] == "2026-06-11 19:00:00"
-    assert factual["weather"] == {"temperature": 24, "description": "clear"}
-    assert factual["weather_source"] == "metadata"
     assert factual["lineup_count"] == 1
-    assert factual["sidelined_count"] == 1
-    assert features["data_quality"]["weather"] == "available"
-    assert features["data_quality"]["venue"] == "available"
+    assert "weather" not in factual
+    assert "sidelined" not in factual
+    assert "referees" not in factual

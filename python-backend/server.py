@@ -11,11 +11,13 @@ from pydantic import BaseModel
 import requests
 
 from config import DEFAULT_FIXTURE_ID, load_env
+from http_logging import setup_backend_logging
 from pipeline import run_pipeline
 from store import SupabaseRunStore
 
 
 load_env()
+setup_backend_logging()
 
 app = FastAPI(title="Polymarket Arena Agent Backend")
 allowed_origins = [
@@ -41,13 +43,28 @@ class RunRequest(BaseModel):
     dry_run: bool = True
 
 
+def live_orders_enabled() -> bool:
+    return os.environ.get("ALLOW_LIVE_ORDERS", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def require_live_order_permission(dry_run: bool) -> None:
+    if not dry_run and not live_orders_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail="Live Stair AI orders are disabled on this backend. Set ALLOW_LIVE_ORDERS=true only for an intentional production launch.",
+        )
+
+
 def store() -> SupabaseRunStore:
     return SupabaseRunStore()
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "live_orders_enabled": live_orders_enabled(),
+    }
 
 
 @app.get("/runs")
@@ -77,6 +94,7 @@ def get_run(run_id: str) -> dict[str, Any]:
 
 @app.post("/runs")
 def create_run(request: RunRequest) -> dict[str, Any]:
+    require_live_order_permission(request.dry_run)
     run_id = str(uuid.uuid4())
     s = store()
     initial_fixture_id = request.fixture_id or 0
@@ -95,6 +113,7 @@ async def websocket_run(websocket: WebSocket) -> None:
         mode = str(message.get("mode") or ("manual" if message.get("fixture_id") else "auto"))
         fixture_id = int(message["fixture_id"]) if message.get("fixture_id") else None
         dry_run = bool(message.get("dry_run", True))
+        require_live_order_permission(dry_run)
         run_id = str(uuid.uuid4())
         s.create_run(run_id, fixture_id or 0, mode=mode)
         await websocket.send_json({"type": "run_started", "run_id": run_id, "fixture_id": fixture_id, "mode": mode})

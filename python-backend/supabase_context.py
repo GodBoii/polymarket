@@ -84,7 +84,7 @@ def resolve_country_id(
             if rows:
                 return {"country_id": rows[0].get(country_column), "source": "dim_match", "matched": variant, "sportmonks_country_id": sportmonks_country_id}
 
-    return {"country_id": sportmonks_country_id, "source": "sportmonks_country_id", "matched": None, "sportmonks_country_id": sportmonks_country_id}
+    return {"country_id": None, "source": "unresolved", "matched": None, "sportmonks_country_id": sportmonks_country_id}
 
 
 def _country_rows(data: SupabaseRowsProvider, table_name: str, country_ids: list[int]) -> list[dict[str, Any]]:

@@ -80,12 +80,13 @@ export default function WhyWeWin() {
         <Kicker index="06 / B">THE FIVE EDGES</Kicker>
         <div className="mt-12 grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-4">
           {EDGES.slice(0, 3).map((e) => (
-            <EdgeCard key={e.code} e={e} span="md:col-span-2" />
+            <EdgeCard key={e.code} e={e} span="md:col-span-2 lg:col-span-4" />
           ))}
           {EDGES.slice(3).map((e) => (
-            <EdgeCard key={e.code} e={e} span="md:col-span-3" />
+            <EdgeCard key={e.code} e={e} span="md:col-span-3 lg:col-span-6" />
           ))}
         </div>
+
 
         <p className="mt-16 text-white/55 text-base md:text-lg max-w-3xl leading-relaxed">
           Five edges. One model. One published probability per second. We invite you to compare.

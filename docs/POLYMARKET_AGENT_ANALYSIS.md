@@ -425,12 +425,20 @@ Add instructions:
 
 ## Highest-Impact Next Code Changes
 
-1. Add `polymarket_features.py`.
+Implemented:
+
+1. Added `python-backend/polymarket_features.py`.
 2. Prefer Stair normalized market endpoint in `build_polymarket_context()`.
-3. Add `get_polymarket_listings()` to `ArenaDataToolkit` and use it in scout.
-4. Add exposure fetch before strategy.
-5. Add post-submit order-status polling.
-6. Update Polymarket digest schema to include `market_quality`, `normalized_implied_probabilities`, `raw_mid_sum`, `execution_handles`, and `data_gaps`.
+3. Added `get_polymarket_listings()` to `ArenaDataToolkit` and use it in scout.
+4. Added exposure fetch before strategy and pass it into `build_strategy_context()`.
+5. Added post-submit order-status polling in `python-backend/order_execution.py`.
+6. Updated Polymarket digest schema and deterministic normalization to include `market_quality`, `normalized_implied_probabilities`, `raw_mid_sum`, `execution_handles`, and `data_gaps`.
+
+Still pending:
+
+1. Add order-book/spread/depth/tick-size fetching if Stair proxy exposes those CLOB paths.
+2. Add settlement monitor command.
+3. Add close-position strategy when existing exposure conflicts with updated thesis.
 
 ## Bottom Line
 

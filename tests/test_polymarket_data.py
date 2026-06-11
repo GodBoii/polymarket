@@ -6,7 +6,7 @@ import requests
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ARENA = "https://staging.stair-ai.com"
+ARENA = "https://stair-ai.com"
 FIXTURE_ID = 19609127
 
 

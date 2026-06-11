@@ -88,7 +88,7 @@ function AuthForm() {
             </div>
             <h1 className="font-display text-5xl leading-none md:text-7xl">Control the agent before it touches the market.</h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/62">
-              Sign in to start dry-run agent research, inspect every streamed stage, and review the ledger trail from one operational dashboard.
+              Sign in to start live arena agent research, inspect every streamed stage, and review the ledger trail from one operational dashboard.
             </p>
             <div className="mt-8 grid gap-3 text-sm text-white/65 sm:grid-cols-3">
               {["Authenticated starts", "Live stage stream", "Audit-ready history"].map((item) => (
