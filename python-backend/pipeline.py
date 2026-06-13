@@ -121,7 +121,7 @@ def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink
     emit(event_sink, "ledger_record", "ledger", plan)
     emit(event_sink, "stage_started", "polycognitive", {"session_id": session_id, "mode": mode, "fixture_id": fixture_id})
 
-    fixture_tools = FixtureSelectionToolkit(data, ledger, event_sink)
+    fixture_tools = FixtureSelectionToolkit(data, ledger, trading=trading, event_sink=event_sink)
     arena_tools = PolycognitiveToolkit(data, trading, ledger, dry_run=dry_run, event_sink=event_sink)
     arena_tools.last_agent_profile = profile_sync if isinstance(profile_sync, dict) else None
     team = polycognitive_team(db, session_id, fixture_tools, arena_tools)
@@ -136,10 +136,11 @@ Dry run: {dry_run}
 
 Workflow:
 1. Delegate fixture selection to fixture_agent. If a requested fixture id is provided, fixture_agent may use it only if it is still a sensible World Cup fixture; otherwise select the best available candidate.
-2. Use the selected fixture_id to gather match context, historical evidence, Polymarket context, and current exposure.
-3. Submit a Stair AI prediction before any bet.
-4. Place a guarded buy-YES bet on the best available outcome. Minimum order size is 1 USDC.
-5. Respond naturally in Markdown with the chosen fixture, evidence, market view, prediction, bet, confidence, and main factors.
+2. Call get_account_status so the team sees wallet balance, open positions, and any prior bets already tied to the slate.
+3. Use the selected fixture_id to gather match context, historical evidence, Polymarket context, and current exposure.
+4. Submit a Stair AI prediction before any bet.
+5. Place a guarded buy-YES bet on the best available outcome. Minimum order size is 1 USDC.
+6. Respond naturally in Markdown with the chosen fixture, evidence, market view, prediction, bet, confidence, and main factors.
 """
 
     final_text = ""
@@ -266,15 +267,15 @@ Workflow:
     if order_result and order_result.get("submitted"):
         reflecting_inputs.append({"input_payload": json.dumps({"order": {"submitted": True, "dry_run": order_result.get("dry_run")}}, ensure_ascii=True, default=str)})
 
-    edge_pp = summary.get("edge_pp")
+    edge_pp_value = summary.get("edge_pp")
     reflecting_output = {
         "fixture": summary.get("selected_fixture", {}).get("name", "unknown"),
         "outcome": summary.get("prediction_outcome"),
         "probability": summary.get("prediction_probability"),
         "market_probability": summary.get("market_probability"),
-        "edge_pp": edge_pp,
+        "edge_pp": edge_pp_value,
         "traded": summary.get("should_trade", False),
-        "confidence": "high" if edge_pp and abs(edge_pp) > 5 else "moderate" if edge_pp and abs(edge_pp) > 2 else "low",
+        "confidence": "high" if edge_pp_value and abs(edge_pp_value) > 5 else "moderate" if edge_pp_value and abs(edge_pp_value) > 2 else "low",
         "data_quality": "good" if match_context and polymarket_context else "partial",
     }
     ledger.reflecting(

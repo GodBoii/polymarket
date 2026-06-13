@@ -67,17 +67,59 @@ def _tool_summary(output: Any) -> Any:
 
 
 class FixtureSelectionToolkit(Toolkit):
-    def __init__(self, data: ArenaDataToolkit, ledger: LedgerSink, event_sink: EventSink | None = None, max_candidates: int = 12) -> None:
+    def __init__(
+        self,
+        data: ArenaDataToolkit,
+        ledger: LedgerSink,
+        trading: ArenaTradingToolkit | None = None,
+        event_sink: EventSink | None = None,
+        max_candidates: int = 12,
+    ) -> None:
         self.data = data
         self.ledger = ledger
+        self.trading = trading
         self.event_sink = event_sink
         self.max_candidates = max_candidates
         self.last_candidates: dict[str, Any] | None = None
-        super().__init__(name="fixture_selection", tools=[self.get_worldcup_fixture_candidates])
+        super().__init__(name="fixture_selection", tools=[self.get_worldcup_match_slate, self.get_worldcup_fixture_candidates])
 
-    def get_worldcup_fixture_candidates(self, session_id: str, season_id: int = SPORTMONKS_SEASON_ID) -> dict[str, Any]:
-        """Return ranked WC2026 fixture candidates with market and data coverage."""
-        _emit(self.event_sink, "tool_call_started", "fixture_selector", {"tool_name": "get_worldcup_fixture_candidates", "input": {"session_id": session_id, "season_id": season_id}})
+    def _current_exposure_by_fixture(self) -> dict[str, dict[str, Any]]:
+        summary: dict[str, dict[str, Any]] = {}
+        if not self.trading:
+            return summary
+        try:
+            payload = self.trading.get_exposure()
+        except Exception:
+            return summary
+        positions = payload.get("positions") or payload.get("data") or []
+        if not isinstance(positions, list):
+            return summary
+        for position in positions:
+            if not isinstance(position, dict):
+                continue
+            fixture_id = str(position.get("fixture_id") or position.get("fixture_code") or "")
+            if not fixture_id:
+                continue
+            bucket = summary.setdefault(fixture_id, {"position_count": 0, "total_cost_usdc": 0.0, "team_codes": []})
+            bucket["position_count"] += 1
+            cost = Decimal("0")
+            avg_cost = position.get("avg_cost_usdc")
+            qty = position.get("quantity")
+            value = position.get("value_usdc")
+            try:
+                if avg_cost is not None and qty is not None:
+                    cost = Decimal(str(avg_cost)) * Decimal(str(qty))
+                elif value is not None:
+                    cost = Decimal(str(value))
+            except (InvalidOperation, TypeError, ValueError):
+                cost = Decimal("0")
+            bucket["total_cost_usdc"] = round(float(bucket["total_cost_usdc"] + float(cost)), 2)
+            team_code = position.get("team_code") or position.get("outcome")
+            if team_code and team_code not in bucket["team_codes"]:
+                bucket["team_codes"].append(str(team_code))
+        return summary
+
+    def _listed_fixtures(self, season_id: int) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
         schedule = self.data.get_sportmonks_schedule(season_id)
         fixtures = flatten_schedule(schedule)
         listed_fixture_ids: set[str] = set()
@@ -90,10 +132,45 @@ class FixtureSelectionToolkit(Toolkit):
             }
         except Exception:
             listed_fixture_ids = set()
-
         named_fixtures = [row for row in fixtures if row.get("has_named_participants")]
         if listed_fixture_ids:
             named_fixtures = [row for row in named_fixtures if str(row.get("fixture_id")) in listed_fixture_ids]
+        exposure_by_fixture = self._current_exposure_by_fixture()
+        return named_fixtures, exposure_by_fixture
+
+    def get_worldcup_match_slate(self, session_id: str, season_id: int = SPORTMONKS_SEASON_ID) -> dict[str, Any]:
+        """Return the full World Cup Polymarket slate with dates and any existing open exposure."""
+        _emit(self.event_sink, "tool_call_started", "fixture_selector", {"tool_name": "get_worldcup_match_slate", "input": {"session_id": session_id, "season_id": season_id}})
+        fixtures, exposure_by_fixture = self._listed_fixtures(season_id)
+        slate = []
+        for fixture in fixtures:
+            exposure = exposure_by_fixture.get(str(fixture.get("fixture_id"))) or {}
+            slate.append(
+                {
+                    key: fixture.get(key)
+                    for key in ["fixture_id", "fixture_code", "name", "starting_at", "stage", "round", "has_named_participants"]
+                }
+                | {
+                    "open_exposure_count": exposure.get("position_count", 0),
+                    "open_exposure_cost_usdc": exposure.get("total_cost_usdc", 0.0),
+                    "open_exposure_team_codes": exposure.get("team_codes", []),
+                }
+            )
+        result = {"session_id": session_id, "season_id": season_id, "fixture_count": len(slate), "fixtures": slate}
+        self.ledger.tool_calling(
+            tool_name="get_worldcup_match_slate",
+            description=f"sportmonks/polymarket: Built the full listed World Cup slate with {len(slate)} fixtures and current account exposure annotations.",
+            input_payload={"session_id": session_id, "season_id": season_id},
+            output_payload=_tool_summary(result),
+            success=True,
+        )
+        _emit(self.event_sink, "tool_call_completed", "fixture_selector", {"tool_name": "get_worldcup_match_slate", "output": _tool_summary(result), "success": True})
+        return result
+
+    def get_worldcup_fixture_candidates(self, session_id: str, season_id: int = SPORTMONKS_SEASON_ID) -> dict[str, Any]:
+        """Return ranked WC2026 fixture candidates with market and data coverage."""
+        _emit(self.event_sink, "tool_call_started", "fixture_selector", {"tool_name": "get_worldcup_fixture_candidates", "input": {"session_id": session_id, "season_id": season_id}})
+        named_fixtures, exposure_by_fixture = self._listed_fixtures(season_id)
 
         candidates = []
         for fixture in named_fixtures[: self.max_candidates]:
@@ -117,24 +194,29 @@ class FixtureSelectionToolkit(Toolkit):
                 weather = weather_context_from_fixture(fixture_body)
             except Exception:
                 pass
+            exposure = exposure_by_fixture.get(str(fixture["fixture_id"])) or {}
             candidate = score_candidate(
                 fixture,
                 mapping_count=mapping_count,
                 market_count=market_count,
                 midpoint_count=midpoint_count,
                 odds_count=odds_count,
+                open_exposure_count=int(exposure.get("position_count", 0)),
+                open_exposure_cost=float(exposure.get("total_cost_usdc", 0.0)),
             )
             if venue:
                 candidate["venue"] = venue
             if weather:
                 candidate["weather"] = weather
+            if exposure:
+                candidate["open_exposure_team_codes"] = exposure.get("team_codes", [])
             candidates.append(_prune_agent_payload(candidate))
 
         selected = choose_best_candidate(candidates)
         result = {
             "session_id": session_id,
             "season_id": season_id,
-            "fixture_count": len(fixtures),
+            "fixture_count": len(named_fixtures),
             "selected": selected,
             "candidates": candidates,
         }
@@ -142,7 +224,7 @@ class FixtureSelectionToolkit(Toolkit):
         selected_name = selected.get("name", "unknown") if selected else "none"
         self.ledger.tool_calling(
             tool_name="get_worldcup_fixture_candidates",
-            description=f"sportmonks: List WC2026 season schedule to discover fixtures. Found {len(fixtures)} total, ranked {len(candidates)} named candidates. Selected: {selected_name}.",
+            description=f"sportmonks: List WC2026 season schedule to discover fixtures. Found {len(named_fixtures)} listed named fixtures, ranked {len(candidates)} candidates. Selected: {selected_name}.",
             input_payload={"session_id": session_id, "season_id": season_id},
             output_payload=_tool_summary(result),
             success=True,
@@ -157,8 +239,8 @@ class FixtureSelectionToolkit(Toolkit):
                     "fixture_id": selected.get("fixture_id"),
                     "score": selected.get("score"),
                     "candidate_count": len(candidates),
-                    "total_fixtures": len(fixtures),
-                    "selection_criteria": "Highest composite score based on Polymarket mapping, market count, midpoint availability, and Sportmonks odds coverage.",
+                    "total_fixtures": len(named_fixtures),
+                    "selection_criteria": "Highest composite score based on Polymarket mapping, market count, midpoint availability, Sportmonks odds coverage, and a penalty for existing exposure on that fixture.",
                 },
             )
         _emit(self.event_sink, "tool_call_completed", "fixture_selector", {"tool_name": "get_worldcup_fixture_candidates", "output": _tool_summary(result), "success": True})
@@ -182,6 +264,7 @@ class PolycognitiveToolkit(Toolkit):
         super().__init__(
             name="polycognitive_arena",
             tools=[
+                self.get_account_status,
                 self.get_match_context,
                 self.get_polymarket_context,
                 self.get_current_exposure,
@@ -218,6 +301,98 @@ class PolycognitiveToolkit(Toolkit):
         if balance <= Decimal("0.05"):
             return Decimal("0")
         return min(Decimal("5"), (balance - Decimal("0.05")).quantize(Decimal("0.01")))
+
+    def get_account_status(self) -> dict[str, Any]:
+        """Return wallet balance, current open positions, and the source-of-truth profile links."""
+        _emit(self.event_sink, "tool_call_started", "account_status", {"tool_name": "get_account_status", "input": {}})
+        profile = self.trading.get_agent_profile()
+        exposure = self.trading.get_exposure()
+        self.last_agent_profile = profile
+        self.last_exposure = exposure
+        wallet = profile.get("wallet") if isinstance(profile, dict) else {}
+        positions = exposure.get("positions") or exposure.get("data") or []
+        fixture_lookup: dict[str, dict[str, Any]] = {}
+        try:
+            schedule = self.data.get_sportmonks_schedule(SPORTMONKS_SEASON_ID)
+            fixtures = flatten_schedule(schedule)
+            fixture_lookup = {str(row.get("fixture_id")): row for row in fixtures if row.get("fixture_id") is not None}
+        except Exception:
+            fixture_lookup = {}
+
+        open_positions = []
+        total_position_cost = Decimal("0")
+        total_mark_value = Decimal("0")
+        for position in positions if isinstance(positions, list) else []:
+            if not isinstance(position, dict):
+                continue
+            fixture_id = str(position.get("fixture_id") or position.get("fixture_code") or "")
+            fixture = fixture_lookup.get(fixture_id, {})
+            cost = Decimal("0")
+            mark_value = Decimal("0")
+            try:
+                if position.get("avg_cost_usdc") is not None and position.get("quantity") is not None:
+                    cost = Decimal(str(position["avg_cost_usdc"])) * Decimal(str(position["quantity"]))
+            except (InvalidOperation, TypeError, ValueError):
+                cost = Decimal("0")
+            try:
+                if position.get("value_usdc") is not None:
+                    mark_value = Decimal(str(position["value_usdc"]))
+            except (InvalidOperation, TypeError, ValueError):
+                mark_value = Decimal("0")
+            total_position_cost += cost
+            total_mark_value += mark_value
+            open_positions.append(
+                {
+                    "fixture_id": fixture_id,
+                    "match": fixture.get("name"),
+                    "starting_at": fixture.get("starting_at"),
+                    "stage": fixture.get("stage"),
+                    "round": fixture.get("round"),
+                    "team_code": position.get("team_code"),
+                    "quantity": position.get("quantity"),
+                    "avg_cost_usdc": position.get("avg_cost_usdc"),
+                    "estimated_cost_usdc": f"{cost:.2f}",
+                    "mark_price": position.get("mark_price"),
+                    "value_usdc": position.get("value_usdc"),
+                    "unrealized_pnl_usdc": position.get("unrealized_pnl_usdc"),
+                    "outcome_token_id": position.get("outcome_token_id"),
+                }
+            )
+
+        result = {
+            "agent": {
+                "agent_id": profile.get("agent_id"),
+                "display_name": profile.get("display_name"),
+                "slug": profile.get("slug"),
+                "lifecycle_phase": profile.get("lifecycle_phase"),
+            },
+            "wallet": {
+                "available_balance_usdc": wallet.get("available_balance_usdc"),
+                "locked_balance_usdc": wallet.get("locked_balance_usdc"),
+                "wallet_address": wallet.get("address"),
+                "polymarket_profile_url": wallet.get("polymarket_profile_url"),
+                "polyscan_url": wallet.get("polyscan_url"),
+            },
+            "positions_summary": {
+                "open_position_count": len(open_positions),
+                "estimated_total_cost_usdc": f"{total_position_cost:.2f}",
+                "estimated_total_mark_value_usdc": f"{total_mark_value:.2f}",
+            },
+            "open_positions": open_positions,
+            "notes": [
+                "Use polymarket_profile_url as the external ground-truth view when Stair exposure/order state looks inconsistent.",
+                "Estimated position cost is derived from avg_cost_usdc * quantity when available.",
+            ],
+        }
+        self._record_tool(
+            "get_account_status",
+            f"arena: Fetched account status with wallet balance and {len(open_positions)} open positions.",
+            {},
+            result,
+            True,
+            "account_status",
+        )
+        return result
 
     def get_match_context(self, fixture_id: int) -> dict[str, Any]:
         """Return a complete football, weather, and historical evidence bundle for one fixture."""
@@ -317,7 +492,6 @@ class PolycognitiveToolkit(Toolkit):
         }
         result["features"] = build_polymarket_features(result)
         self.last_polymarket_context = result
-        event_slug_desc = polymarket_context.get("event_slug") if isinstance(polymarket_context, dict) else event_slug
         self._record_tool("get_polymarket_context", f"polymarket: Fetched market mapping, Gamma event data, and CLOB midpoint prices for event {event_slug or 'unknown'}. Three-outcome market (home/draw/away).", {"fixture_id": fixture_id}, result, True, "polymarket_context")
         return result
 
