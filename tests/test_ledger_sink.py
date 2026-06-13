@@ -137,3 +137,52 @@ def test_submit_record_dry_run_applies_single_record_size_limit():
     assert "[TRUNCATED]" in submitted["output_payload"]
     assert "[TRUNCATED]" in submitted["model_invocation"]["internal_reasoning"]
     assert len(json.dumps(submitted, ensure_ascii=True).encode("utf-8")) <= MAX_RECORD_BYTES
+
+
+def test_planning_record_builds_correct_shape():
+    sink = LedgerSink("test-session")
+    plan = sink.planning(
+        goal="Analyze fixture and place bet.",
+        description="Pre-match trading plan.",
+        steps=[
+            {"index": 0, "description": "Select fixture."},
+            {"index": 1, "description": "Gather data.", "depends_on": [0]},
+        ],
+        contingencies=["Skip if no edge."],
+    )
+
+    assert plan["behavior"] == "Planning"
+    assert plan["goal"] == "Analyze fixture and place bet."
+    assert len(plan["steps"]) == 2
+    assert plan["contingencies"] == ["Skip if no edge."]
+    assert plan["description"] == "Pre-match trading plan."
+
+
+def test_reflecting_record_builds_correct_shape():
+    sink = LedgerSink("test-session")
+    think = sink.thinking(prompt="digest", output_payload="ready")
+    reflect = sink.reflecting(
+        inputs=[{"input_payload": json.dumps({"prediction": {"outcome": "MEX", "probability": 0.5}})}],
+        output_payload=json.dumps({"edge_pp": 3.5, "confidence": "moderate"}),
+        description="Post-decision quality assessment.",
+    )
+
+    assert reflect["behavior"] == "Reflecting"
+    assert reflect["upstream_record_id"] == [think["record_id"]]
+    assert json.loads(reflect["output_payload"])["edge_pp"] == 3.5
+    assert reflect["description"] == "Post-decision quality assessment."
+
+
+def test_full_trace_with_planning_and_reflecting():
+    sink = LedgerSink("test-session")
+    obs = sink.observing(trigger_source="pytest", trigger_type="cron_trigger", trigger_description="test", trigger_payload_summary="payload")
+    plan = sink.planning(goal="Test plan.", steps=[{"index": 0, "description": "Step 1."}])
+    tool = sink.tool_calling(tool_name="sportmonks", description="fetch data", input_payload={}, output_payload={})
+    think = sink.thinking(prompt="digest", output_payload="ready")
+    act = sink.acting(action_type="prediction", target_system="arena", action_summary="predict", parameters={"probability": 0.5}, dry_run=True)
+    reflect = sink.reflecting(inputs=[{"input_payload": "test"}], output_payload="done")
+
+    result = sink.submit(dry_run=True)
+    assert result["record_count"] == 6
+    behaviors = [r["behavior"] for r in result["records"]]
+    assert behaviors == ["Observing", "Planning", "ToolCalling", "Thinking", "Acting", "Reflecting"]

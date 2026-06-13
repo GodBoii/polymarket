@@ -72,6 +72,21 @@ class FakeData:
 class FakeTrading:
     dry_run = True
 
+    def get_agent_profile(self):
+        return {
+            "agent_id": "agent-1",
+            "display_name": "POLYCOGNITIVE",
+            "slug": "poly-agent",
+            "lifecycle_phase": "active",
+            "wallet": {
+                "address": "0xabc",
+                "available_balance_usdc": "96.93",
+                "locked_balance_usdc": "0",
+                "polymarket_profile_url": "https://polymarket.com/profile/test",
+                "polyscan_url": "https://polygonscan.com/address/test",
+            },
+        }
+
     def get_exposure(self, fixture_code=None):
         return {"positions": []}
 
@@ -99,6 +114,59 @@ def test_fixture_candidates_exclude_prediction_counts():
     assert result["fixture_count"] == 1
     assert "prediction_count" not in result["candidates"][0]
     assert "data_boundary" not in result
+
+
+def test_fixture_candidates_include_exposure_penalty():
+    class ExposedTrading(FakeTrading):
+        def get_exposure(self, fixture_code=None):
+            return {
+                "positions": [
+                    {
+                        "fixture_id": "19609127",
+                        "team_code": "draw",
+                        "avg_cost_usdc": "0.21",
+                        "quantity": "14.285714",
+                        "value_usdc": "2.93",
+                    }
+                ]
+            }
+
+    toolkit = FixtureSelectionToolkit(FakeData(), LedgerSink("test-session"), trading=ExposedTrading())
+
+    result = toolkit.get_worldcup_fixture_candidates("test-session")
+
+    candidate = result["candidates"][0]
+    assert candidate["open_exposure_count"] == 1
+    assert candidate["open_exposure_cost"] > 2.9
+    assert "existing exposure penalty" in " ".join(candidate["score_reasons"])
+
+
+def test_get_account_status_aggregates_wallet_and_positions():
+    class ExposedTrading(FakeTrading):
+        def get_exposure(self, fixture_code=None):
+            return {
+                "positions": [
+                    {
+                        "fixture_id": "19609127",
+                        "team_code": "draw",
+                        "avg_cost_usdc": "0.21",
+                        "quantity": "14.285714",
+                        "mark_price": 0.205,
+                        "value_usdc": "2.928571",
+                        "unrealized_pnl_usdc": "-0.071429",
+                        "outcome_token_id": "token-1",
+                    }
+                ]
+            }
+
+    toolkit = PolycognitiveToolkit(FakeData(), ExposedTrading(), LedgerSink("test-session"))
+
+    result = toolkit.get_account_status()
+
+    assert result["wallet"]["available_balance_usdc"] == "96.93"
+    assert result["positions_summary"]["open_position_count"] == 1
+    assert result["open_positions"][0]["match"] == "Mexico vs South Africa"
+    assert result["open_positions"][0]["estimated_cost_usdc"] == "3.00"
 
 
 def test_match_context_strips_prediction_payloads_and_uses_static_weather():
@@ -133,7 +201,10 @@ def test_place_bet_rejects_unsafe_orders():
 
 
 def test_place_bet_normalizes_order_payload_for_stair():
-    toolkit = PolycognitiveToolkit(FakeData(), ArenaTradingToolkit(dry_run=True), LedgerSink("test-session"))
+    trading = ArenaTradingToolkit(dry_run=True)
+    trading.get_match = lambda fixture_id: {"fixture_id": str(fixture_id), "current_window": "PRE_MATCH"}
+    trading.get_exposure = lambda fixture_code=None: {"positions": []}
+    toolkit = PolycognitiveToolkit(FakeData(), trading, LedgerSink("test-session"))
 
     result = toolkit.place_bet("19609127", "MEX", "1.239", 0.681534)
 
