@@ -351,6 +351,12 @@ class LedgerSink:
             record["parameters"] = self._compact_value(record.get("parameters"), ACTING_PARAMETERS_MAX_BYTES, preserve_object=True)
         elif behavior == "Other" and "data" in record:
             record["data"] = self._compact_value(record.get("data"), OTHER_DATA_MAX_BYTES, preserve_object=True)
+        elif behavior == "Planning":
+            if "goal" in record:
+                record["goal"] = self._compact_value(record.get("goal"), THINKING_PROMPT_MAX_BYTES)
+        elif behavior == "Reflecting":
+            if "output_payload" in record:
+                record["output_payload"] = self._compact_value(record.get("output_payload"), THINKING_OUTPUT_MAX_BYTES)
 
         model_invocation = record.get("model_invocation")
         if isinstance(model_invocation, dict) and "internal_reasoning" in model_invocation:

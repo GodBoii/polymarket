@@ -90,6 +90,8 @@ def score_candidate(
     market_count: int = 0,
     midpoint_count: int = 0,
     odds_count: int = 0,
+    open_exposure_count: int = 0,
+    open_exposure_cost: float = 0,
 ) -> dict[str, Any]:
     now = now or datetime.now(timezone.utc)
     kickoff = parse_dt(fixture.get("starting_at"))
@@ -116,6 +118,10 @@ def score_candidate(
     if odds_count:
         score += min(10, odds_count / 250)
         reasons.append(f"{odds_count} odds rows")
+    if open_exposure_count:
+        penalty = min(35.0, 18.0 + float(open_exposure_cost) * 4.0 + max(0, open_exposure_count - 1) * 6.0)
+        score -= penalty
+        reasons.append(f"existing exposure penalty ({open_exposure_count} positions, ${float(open_exposure_cost):.2f} cost)")
 
     return {
         **fixture,
@@ -125,6 +131,8 @@ def score_candidate(
         "market_count": market_count,
         "midpoint_count": midpoint_count,
         "odds_count": odds_count,
+        "open_exposure_count": open_exposure_count,
+        "open_exposure_cost": round(float(open_exposure_cost), 2),
         "score_reasons": reasons,
     }
 
