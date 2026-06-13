@@ -5,9 +5,11 @@ import Link from "next/link";
 import {
   Activity,
   Bot,
+  Brain,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
-  Database,
   History,
   Loader2,
   LogOut,
@@ -15,12 +17,13 @@ import {
   Play,
   Radio,
   RefreshCcw,
-  Search,
   ShieldCheck,
   Sparkles,
   Target,
   TerminalSquare,
   Wrench,
+  XCircle,
+  Zap,
 } from "lucide-react";
 import AuthGate from "../components/AuthGate";
 import { supabase } from "../lib/supabase";
@@ -48,7 +51,8 @@ type HealthResponse = {
 
 type TranscriptItem =
   | { id: string; kind: "message"; role: string; stage: string; content: string; summary?: Record<string, unknown> }
-  | { id: string; kind: "tool"; stage: string; title: string; content: string; status: "running" | "completed"; payload?: unknown }
+  | { id: string; kind: "tool"; stage: string; title: string; status: "running" | "completed" | "error"; input?: unknown; output?: unknown; success?: boolean }
+  | { id: string; kind: "thinking"; stage: string; title: string; content: string; thinkingPayload?: unknown }
   | { id: string; kind: "candidate"; stage: string; title: string; content: string; score?: number }
   | { id: string; kind: "decision"; stage: string; summary: Record<string, unknown> }
   | { id: string; kind: "ledger"; stage: string; title: string; content: string };
@@ -58,16 +62,185 @@ const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8001";
 
 const STAGE_LABELS: Record<string, string> = {
   polycognitive: "POLYCOGNITIVE",
-  fixture_selector: "Fixture agent",
-  match_context: "Match context",
+  fixture_selector: "Fixture Agent",
+  fixture_selector_thinking: "Fixture Selection Thinking",
+  match_context: "Match Context",
   polymarket_context: "Polymarket",
   exposure: "Exposure",
   prediction_submission: "Prediction",
   bet: "Bet",
   ledger_writer: "Ledger",
   decision: "Decision",
+  account_status: "Account Status",
+  ledger_thinking: "Thinking",
+  match_context_digest: "Match Context Digest",
+  polymarket_digest: "Polymarket Digest",
+  probability_edge: "Probability & Edge",
 };
 
+// ─── Simple Markdown Renderer ─────────────────────────────────────────────────
+function markdownToHtml(md: string): string {
+  let html = md
+    // Escape HTML entities first
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h3 class="md-h3">$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2 class="md-h2">$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1 class="md-h1">$1</h1>');
+
+  // Bold + italic combo
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code class="md-code">$1</code>');
+
+  // Horizontal rules
+  html = html.replace(/^---+$/gm, "<hr />");
+  html = html.replace(/^===+$/gm, "<hr />");
+
+  // Unordered lists (lines starting with - or *)
+  html = html.replace(/^[-*] (.+)$/gm, '<li class="md-li">$1</li>');
+  html = html.replace(/(<li class="md-li">.*<\/li>(\n|$))+/g, (match) => `<ul class="md-ul">${match}</ul>`);
+
+  // Blockquotes
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote class="md-blockquote">$1</blockquote>');
+
+  // Double newline → paragraph break
+  html = html.replace(/\n\n+/g, '</p><p class="md-p">');
+  html = `<p class="md-p">${html}</p>`;
+
+  // Single newlines within paragraphs
+  html = html.replace(/<\/p><p class="md-p"><\/p><p class="md-p">/g, '</p><p class="md-p">');
+  html = html.replace(/\n/g, "<br />");
+
+  return html;
+}
+
+function MarkdownContent({ content }: { content: string }) {
+  return (
+    <div
+      className="markdown-body"
+      dangerouslySetInnerHTML={{ __html: markdownToHtml(content) }}
+    />
+  );
+}
+
+// ─── Transcript builder ───────────────────────────────────────────────────────
+function buildTranscript(events: EventRow[], result?: Record<string, unknown>): TranscriptItem[] {
+  const items: TranscriptItem[] = [];
+  // Track tool-call pairs: key → index in items array
+  const toolIndex = new Map<string, number>();
+
+  events.forEach((event, index) => {
+    const payload = event.payload || {};
+
+    if (event.event_type === "chat_message") {
+      items.push({
+        id: `m-${index}`,
+        kind: "message",
+        role: String(payload.role || "assistant"),
+        stage: event.stage,
+        content: String(payload.content || ""),
+        summary: asRecord(payload.summary),
+      });
+    } else if (event.event_type === "tool_call_started") {
+      const toolName = String(payload.tool_name || event.stage);
+      const key = `${event.stage}::${toolName}`;
+      const item: TranscriptItem = {
+        id: `t-${index}`,
+        kind: "tool",
+        stage: event.stage,
+        title: toolName,
+        status: "running",
+        input: payload.input,
+        output: undefined,
+        success: undefined,
+      };
+      toolIndex.set(key, items.length);
+      items.push(item);
+    } else if (event.event_type === "tool_call_completed") {
+      const toolName = String(payload.tool_name || event.stage);
+      const key = `${event.stage}::${toolName}`;
+      const existingIdx = toolIndex.get(key);
+      if (existingIdx !== undefined) {
+        const existing = items[existingIdx] as Extract<TranscriptItem, { kind: "tool" }>;
+        items[existingIdx] = {
+          ...existing,
+          status: payload.success === false ? "error" : "completed",
+          output: payload.output,
+          success: payload.success !== false,
+        };
+      } else {
+        items.push({
+          id: `tc-${index}`,
+          kind: "tool",
+          stage: event.stage,
+          title: toolName,
+          status: payload.success === false ? "error" : "completed",
+          output: payload.output,
+          success: payload.success !== false,
+        });
+      }
+    } else if (event.event_type === "ledger_record") {
+      if (event.stage === "ledger_thinking") {
+        const stageLabel = String((payload as Record<string, unknown>).stage || "");
+        items.push({
+          id: `th-${index}`,
+          kind: "thinking",
+          stage: event.stage,
+          title: STAGE_LABELS[stageLabel] || stageLabel || "Thinking",
+          content: String(payload.description || ""),
+          thinkingPayload: payload,
+        });
+      } else {
+        items.push({
+          id: `l-${index}`,
+          kind: "ledger",
+          stage: event.stage,
+          title: String(payload.behavior || "Ledger record"),
+          content: String(payload.description || (payload as Record<string, unknown>).action_summary || (payload as Record<string, unknown>).trigger_description || "Reasoning ledger record prepared"),
+        });
+      }
+    } else if (event.event_type === "candidate_ranked") {
+      items.push({
+        id: `c-${index}`,
+        kind: "candidate",
+        stage: event.stage,
+        title: String(payload.name || "Candidate fixture"),
+        content: `Score ${String(payload.score ?? "n/a")} — ${Array.isArray(payload.score_reasons) ? payload.score_reasons.join(", ") : "market candidate"}`,
+        score: typeof payload.score === "number" ? payload.score : undefined,
+      });
+    } else if (event.event_type === "fixture_selected") {
+      items.push({
+        id: `s-${index}`,
+        kind: "ledger",
+        stage: event.stage,
+        title: "Fixture Selected",
+        content: `Selected fixture: ${String(payload.name || payload.fixture_id || "unknown")}.`,
+      });
+    } else if (event.event_type === "decision") {
+      items.push({ id: `d-${index}`, kind: "decision", stage: event.stage, summary: payload });
+    }
+  });
+
+  const summary = asRecord(result?.summary);
+  if (summary && !items.some((item) => item.kind === "decision")) {
+    items.push({ id: "result-decision", kind: "decision", stage: "decision", summary });
+  }
+  return items;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+}
+
+// ─── Page entry ───────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   return (
     <AuthGate>
@@ -89,6 +262,8 @@ function Dashboard({ email }: { email: string }) {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [userScrolled, setUserScrolled] = useState(false);
 
   async function loadHealth() {
     try {
@@ -193,12 +368,48 @@ function Dashboard({ email }: { email: string }) {
     };
   }, []);
 
+  // Auto-scroll transcript container (not the page)
+  useEffect(() => {
+    if (userScrolled) return;
+    const el = scrollContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [events, userScrolled]);
+
+  // Detect when the user manually scrolls up — stop auto-scrolling
+  function handleScroll() {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setUserScrolled(distFromBottom > 80);
+  }
+
   const lastRun = activeRun || runs[0];
   const transcript = useMemo(() => buildTranscript(events, activeRun?.result || lastRun?.result), [events, activeRun?.result, lastRun?.result]);
   const stageLabel = STAGE_LABELS[activeStage] || activeStage;
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
+      {/* Markdown styles injected globally */}
+      <style>{`
+        .markdown-body { font-size: 0.9rem; line-height: 1.75; color: rgba(255,255,255,0.85); }
+        .markdown-body .md-h1 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; color: #fff; }
+        .markdown-body .md-h2 { font-size: 1.2rem; font-weight: 700; margin: 0.9rem 0 0.4rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.3rem; }
+        .markdown-body .md-h3 { font-size: 1rem; font-weight: 600; margin: 0.7rem 0 0.3rem; color: rgba(255,255,255,0.9); }
+        .markdown-body .md-p { margin: 0.5rem 0; }
+        .markdown-body strong { color: #fff; font-weight: 600; }
+        .markdown-body em { color: rgba(255,255,255,0.75); font-style: italic; }
+        .markdown-body .md-code { background: rgba(0,229,255,0.08); color: #00e5ff; padding: 0.1rem 0.35rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; border: 1px solid rgba(0,229,255,0.15); }
+        .markdown-body .md-ul { list-style: none; padding: 0; margin: 0.5rem 0; }
+        .markdown-body .md-li { padding: 0.15rem 0 0.15rem 1.2rem; position: relative; color: rgba(255,255,255,0.8); }
+        .markdown-body .md-li::before { content: "▸"; position: absolute; left: 0; color: #00e5ff; font-size: 0.7rem; top: 0.3rem; }
+        .markdown-body .md-blockquote { border-left: 3px solid rgba(0,229,255,0.4); padding-left: 0.8rem; margin: 0.5rem 0; color: rgba(255,255,255,0.6); font-style: italic; }
+        .markdown-body hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0.75rem 0; }
+        .tool-details summary::-webkit-details-marker { display: none; }
+        .tool-details summary { list-style: none; }
+        .thinking-details summary::-webkit-details-marker { display: none; }
+        .thinking-details summary { list-style: none; }
+      `}</style>
+
       <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#050505]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-3 px-5 py-4 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
@@ -223,6 +434,7 @@ function Dashboard({ email }: { email: string }) {
 
       <div className="mx-auto grid max-w-[1480px] gap-6 px-5 py-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-8">
         <section className="grid gap-6">
+          {/* Hero / control panel */}
           <section className="relative overflow-hidden border border-white/[0.08] bg-[radial-gradient(circle_at_top_right,rgba(0,229,255,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.015))] p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-3xl">
@@ -288,65 +500,83 @@ function Dashboard({ email }: { email: string }) {
             {error && <div className="mt-5 rounded-xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">{error}</div>}
           </section>
 
+          {/* Metrics */}
           <section className="grid gap-3 sm:grid-cols-3">
             <Metric label="Active stage" value={stageLabel === "idle" ? "-" : stageLabel} icon={Activity} />
             <Metric label="Transcript events" value={String(transcript.length)} icon={Sparkles} />
             <Metric label="Recent runs" value={String(runs.length)} icon={History} />
           </section>
 
+          {/* ── Transcript panel ── */}
           <section className="overflow-hidden border border-white/[0.08] bg-white/[0.02]">
             <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] px-5 py-4">
               <div>
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">Agent conversation</div>
                 <h2 className="mt-1 font-display text-lg tracking-[-0.01em]">Polycognitive transcript</h2>
               </div>
-              {live && <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-300">Streaming</span>}
+              {userScrolled && transcript.length > 0 && (
+                <button
+                  onClick={() => {
+                    setUserScrolled(false);
+                    const el = scrollContainerRef.current;
+                    if (el) el.scrollTop = el.scrollHeight;
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/50 hover:border-cyan-300/40 hover:text-cyan-300 transition"
+                >
+                  <ChevronDown size={11} />
+                  Scroll to bottom
+                </button>
+              )}
+              {live && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-300">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />
+                  Streaming
+                </span>
+              )}
             </header>
-            <div className="max-h-[720px] overflow-auto bg-black/25 p-4 sm:p-5">
+
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="max-h-[820px] overflow-y-auto bg-black/25 p-4 sm:p-5"
+            >
               {transcript.length > 0 ? (
-                <div className="grid gap-4">
+                <div className="grid gap-3">
                   {transcript.map((item) => <TranscriptCard key={item.id} item={item} />)}
+                  {/* live typing indicator */}
+                  {live && (
+                    <div className="flex items-center gap-3 px-2">
+                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-cyan-300/30 bg-cyan-300/10 text-cyan-300">
+                        <Bot size={14} />
+                      </div>
+                      <div className="flex gap-1">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-300/60" style={{ animationDelay: "0ms" }} />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-300/60" style={{ animationDelay: "150ms" }} />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-300/60" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    </div>
+                  )}
                   {lastRun?.result && (
-                    <details className="rounded-xl border border-white/[0.08] bg-black/20 p-4">
-                      <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">Debug payload</summary>
+                    <details className="tool-details rounded-xl border border-white/[0.08] bg-black/20 p-4">
+                      <summary className="flex cursor-pointer items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/40 hover:text-white/60">
+                        <ChevronRight size={12} className="details-chevron transition-transform" />
+                        Debug payload
+                      </summary>
                       <pre className="mt-3 max-h-[360px] overflow-auto rounded-lg bg-black/50 p-3 font-mono text-[11px] leading-5 text-white/75">
                         {JSON.stringify(lastRun.result, null, 2)}
                       </pre>
                     </details>
                   )}
+
                 </div>
               ) : (
                 <EmptyState icon={MessageSquare} title="No transcript yet" description="Start the Polycognitive agent to watch it scout, call tools, reason, and make a live arena decision." />
               )}
             </div>
           </section>
-
-          <section className="overflow-hidden border border-white/[0.08] bg-white/[0.02]">
-            <header className="border-b border-white/[0.06] px-5 py-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">Live stream</div>
-              <h2 className="mt-1 font-display text-lg tracking-[-0.01em]">Raw event pulse</h2>
-            </header>
-            <div className="max-h-[260px] overflow-auto">
-              {events.length === 0 ? (
-                <EmptyState icon={Radio} title="Waiting for events" description="Compact stream pulses appear here while the transcript shows the readable agent response." />
-              ) : (
-                <ul className="divide-y divide-white/[0.04]">
-                  {events.slice().reverse().map((ev, i) => (
-                    <li key={`${ev.stage}-${events.length - i}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-5 py-3 text-xs">
-                      <span className="grid h-6 w-6 place-items-center rounded-full border border-cyan-300/30 bg-cyan-300/10 text-cyan-300"><Activity size={12} /></span>
-                      <div className="min-w-0">
-                        <div className="font-mono text-white/85">{ev.event_type}</div>
-                        <div className="truncate font-mono text-[11px] text-white/40">stage: {ev.stage}</div>
-                      </div>
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">{String(events.length - i).padStart(3, "0")}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </section>
         </section>
 
+        {/* ── Sidebar ── */}
         <aside className="grid h-fit gap-6 lg:sticky lg:top-24">
           <section className="overflow-hidden border border-white/[0.08] bg-white/[0.02]">
             <header className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
@@ -404,101 +634,237 @@ function Dashboard({ email }: { email: string }) {
   );
 }
 
-function buildTranscript(events: EventRow[], result?: Record<string, unknown>): TranscriptItem[] {
-  const items: TranscriptItem[] = [];
-  events.forEach((event, index) => {
-    const payload = event.payload || {};
-    if (event.event_type === "chat_message") {
-      items.push({ id: `m-${index}`, kind: "message", role: String(payload.role || "assistant"), stage: event.stage, content: String(payload.content || ""), summary: asRecord(payload.summary) });
-    } else if (event.event_type === "tool_call_started" || event.event_type === "tool_call_completed") {
-      items.push({
-        id: `t-${index}`,
-        kind: "tool",
-        stage: event.stage,
-        title: String(payload.tool_name || STAGE_LABELS[event.stage] || event.stage),
-        content: String(payload.summary || (event.event_type === "tool_call_started" ? "Tool call started" : "Tool call completed")),
-        status: event.event_type === "tool_call_started" ? "running" : "completed",
-        payload: payload.output || payload.input,
-      });
-    } else if (event.event_type === "candidate_ranked") {
-      items.push({
-        id: `c-${index}`,
-        kind: "candidate",
-        stage: event.stage,
-        title: String(payload.name || "Candidate fixture"),
-        content: `Score ${String(payload.score ?? "n/a")} - ${Array.isArray(payload.score_reasons) ? payload.score_reasons.join(", ") : "market candidate"}`,
-        score: typeof payload.score === "number" ? payload.score : undefined,
-      });
-    } else if (event.event_type === "fixture_selected") {
-      items.push({ id: `s-${index}`, kind: "message", role: "assistant", stage: event.stage, content: `Selected fixture: ${String(payload.name || payload.fixture_id || "unknown")}.` });
-    } else if (event.event_type === "decision") {
-      items.push({ id: `d-${index}`, kind: "decision", stage: event.stage, summary: payload });
-    } else if (event.event_type === "ledger_record") {
-      items.push({ id: `l-${index}`, kind: "ledger", stage: event.stage, title: String(payload.behavior || "Ledger record"), content: String(payload.description || payload.action_summary || payload.trigger_description || "Reasoning Ledger record prepared") });
-    }
-  });
-
-  const summary = asRecord(result?.summary);
-  if (summary && !items.some((item) => item.kind === "decision")) {
-    items.push({ id: "result-decision", kind: "decision", stage: "decision", summary });
-  }
-  return items;
-}
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
-}
-
+// ─── Transcript card router ───────────────────────────────────────────────────
 function TranscriptCard({ item }: { item: TranscriptItem }) {
   if (item.kind === "decision") return <DecisionCard summary={item.summary} />;
-  const stage = STAGE_LABELS[item.stage] || item.stage;
-  const Icon = item.kind === "tool" ? Wrench : item.kind === "candidate" ? Search : item.kind === "ledger" ? Database : Bot;
-  const tone = item.kind === "ledger" ? "border-amber-300/20 bg-amber-300/[0.04]" : item.kind === "tool" ? "border-cyan-300/20 bg-cyan-300/[0.04]" : item.kind === "candidate" ? "border-white/[0.08] bg-white/[0.025]" : "border-white/[0.08] bg-white/[0.035]";
+  if (item.kind === "message") return <MessageCard item={item} />;
+  if (item.kind === "tool") return <ToolCallCard item={item} />;
+  if (item.kind === "thinking") return <ThinkingCard item={item} />;
+  if (item.kind === "ledger") return <LedgerCard item={item} />;
+  if (item.kind === "candidate") return <CandidateCard item={item} />;
+  return null;
+}
+
+// ─── Message card (LLM output) ────────────────────────────────────────────────
+function MessageCard({ item }: { item: Extract<TranscriptItem, { kind: "message" }> }) {
+  const isAssistant = item.role === "assistant";
   return (
-    <article className={`rounded-2xl border ${tone} p-4`}>
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/10 bg-black/25 text-cyan-300">
-          <Icon size={15} />
+    <article className="flex gap-3">
+      <div className={`mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full border text-sm font-bold shadow-md ${isAssistant ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-300" : "border-white/15 bg-white/[0.05] text-white/60"}`}>
+        {isAssistant ? <Bot size={15} /> : <span className="text-[10px] font-mono uppercase">{item.role.slice(0, 2)}</span>}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span className="text-xs font-semibold text-white/80">{isAssistant ? "Agent" : item.role}</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/30">{STAGE_LABELS[item.stage] || item.stage}</span>
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">{stage}</span>
-            {item.kind === "tool" && <span className="rounded-full border border-white/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">{item.status}</span>}
-          </div>
-          <h3 className="mt-1 text-sm font-semibold text-white">{item.kind === "message" ? item.role === "assistant" ? "Agent" : item.role : item.title}</h3>
-          <p className="mt-1 text-sm leading-relaxed text-white/70">{item.content}</p>
-          {"payload" in item && item.payload ? (
-            <pre className="mt-3 max-h-36 overflow-auto rounded-lg bg-black/35 p-3 font-mono text-[11px] leading-5 text-white/60">{JSON.stringify(item.payload, null, 2)}</pre>
-          ) : null}
+        <div className="rounded-2xl rounded-tl-sm border border-white/[0.08] bg-white/[0.04] px-5 py-4">
+          {item.content ? (
+            <MarkdownContent content={item.content} />
+          ) : (
+            <p className="text-sm text-white/40 italic">No content</p>
+          )}
         </div>
       </div>
     </article>
   );
 }
 
+// ─── Tool call card (collapsible) ─────────────────────────────────────────────
+function ToolCallCard({ item }: { item: Extract<TranscriptItem, { kind: "tool" }> }) {
+  const isRunning = item.status === "running";
+  const isError = item.status === "error";
+  const stageLabel = STAGE_LABELS[item.stage] || item.stage;
+
+  const statusColor = isRunning
+    ? "border-cyan-300/30 bg-cyan-300/[0.06] text-cyan-300"
+    : isError
+    ? "border-red-400/30 bg-red-400/[0.06] text-red-300"
+    : "border-emerald-300/30 bg-emerald-300/[0.06] text-emerald-300";
+
+  const hasDetails = item.input !== undefined || item.output !== undefined;
+
+  return (
+    <article className={`rounded-2xl border ${isRunning ? "border-cyan-300/20 bg-cyan-300/[0.03]" : isError ? "border-red-400/20 bg-red-400/[0.03]" : "border-white/[0.08] bg-white/[0.025]"}`}>
+      <details className="tool-details group" open={isRunning}>
+        <summary className="flex cursor-pointer items-center gap-3 p-4 select-none">
+          {/* Icon */}
+          <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border ${statusColor}`}>
+            {isRunning ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : isError ? (
+              <XCircle size={14} />
+            ) : (
+              <Wrench size={14} />
+            )}
+          </div>
+
+          {/* Labels */}
+          <div className="flex min-w-0 flex-1 items-center gap-2 flex-wrap">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">{stageLabel}</span>
+            <span className="font-mono text-sm font-semibold text-white/90">{item.title}</span>
+            <span className={`rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] ${statusColor}`}>
+              {item.status}
+            </span>
+          </div>
+
+          {/* Chevron */}
+          {hasDetails && (
+            <ChevronDown size={14} className="shrink-0 text-white/30 transition-transform duration-200 group-open:rotate-180" />
+          )}
+        </summary>
+
+        {hasDetails && (
+          <div className="grid gap-3 border-t border-white/[0.06] px-4 pb-4 pt-3">
+            {item.input !== undefined && (
+              <div>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <Zap size={11} className="text-white/30" />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">Input</span>
+                </div>
+                <pre className="max-h-48 overflow-auto rounded-xl bg-black/40 p-3.5 font-mono text-[11px] leading-5 text-white/70 scrollbar-thin">
+                  {typeof item.input === "string" ? item.input : JSON.stringify(item.input, null, 2)}
+                </pre>
+              </div>
+            )}
+            {item.output !== undefined && (
+              <div>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <CheckCircle2 size={11} className="text-emerald-300/60" />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">Output</span>
+                </div>
+                <pre className="max-h-64 overflow-auto rounded-xl bg-black/40 p-3.5 font-mono text-[11px] leading-5 text-white/70 scrollbar-thin">
+                  {typeof item.output === "string" ? item.output : JSON.stringify(item.output, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
+      </details>
+    </article>
+  );
+}
+
+// ─── Thinking card (collapsible) ──────────────────────────────────────────────
+function ThinkingCard({ item }: { item: Extract<TranscriptItem, { kind: "thinking" }> }) {
+  return (
+    <article className="rounded-2xl border border-violet-400/20 bg-violet-400/[0.04]">
+      <details className="thinking-details group">
+        <summary className="flex cursor-pointer items-center gap-3 p-4 select-none">
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-violet-400/30 bg-violet-400/10 text-violet-300">
+            <Brain size={14} />
+          </div>
+          <div className="flex min-w-0 flex-1 items-center gap-2 flex-wrap">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-violet-300/50">Thinking</span>
+            <span className="font-mono text-sm font-semibold text-violet-200">{item.title}</span>
+          </div>
+          <ChevronDown size={14} className="shrink-0 text-violet-300/40 transition-transform duration-200 group-open:rotate-180" />
+        </summary>
+
+        <div className="grid gap-3 border-t border-violet-400/10 px-4 pb-4 pt-3">
+          {item.content && (
+            <p className="text-sm leading-relaxed text-violet-200/70">{item.content}</p>
+          )}
+          {item.thinkingPayload !== undefined && (
+            <pre className="max-h-64 overflow-auto rounded-xl bg-black/40 p-3.5 font-mono text-[11px] leading-5 text-violet-200/60">
+              {JSON.stringify(item.thinkingPayload as Record<string, unknown>, null, 2)}
+            </pre>
+          )}
+        </div>
+      </details>
+    </article>
+  );
+}
+
+// ─── Ledger card ──────────────────────────────────────────────────────────────
+function LedgerCard({ item }: { item: Extract<TranscriptItem, { kind: "ledger" }> }) {
+  const stageLabel = STAGE_LABELS[item.stage] || item.stage;
+  return (
+    <article className="rounded-2xl border border-amber-300/15 bg-amber-300/[0.03] p-4">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-amber-300/25 bg-amber-300/10 text-amber-300">
+          <Activity size={13} />
+        </div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber-300/50">{stageLabel}</span>
+            <span className="font-semibold text-sm text-amber-100">{item.title}</span>
+          </div>
+          {item.content && (
+            <p className="mt-1 text-sm leading-relaxed text-white/55">{item.content}</p>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+// ─── Candidate card ───────────────────────────────────────────────────────────
+function CandidateCard({ item }: { item: Extract<TranscriptItem, { kind: "candidate" }> }) {
+  const score = item.score;
+  const pct = score !== undefined ? Math.min(100, Math.max(0, Math.round(score * 10))) : null;
+  return (
+    <article className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+      <div className="flex items-center gap-3">
+        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/40">
+          <Target size={13} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-white/80">{item.title}</span>
+            {score !== undefined && (
+              <span className="rounded-full border border-white/10 px-2 py-0.5 font-mono text-[10px] text-white/50">
+                Score {score}
+              </span>
+            )}
+          </div>
+          {pct !== null && (
+            <div className="mt-2 h-1 rounded-full bg-white/[0.06]">
+              <div className="h-1 rounded-full bg-gradient-to-r from-cyan-300/50 to-cyan-300" style={{ width: `${pct}%` }} />
+            </div>
+          )}
+          <p className="mt-1.5 text-xs text-white/45">{item.content}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+// ─── Decision card ────────────────────────────────────────────────────────────
 function DecisionCard({ summary }: { summary: Record<string, unknown> }) {
   const fixture = asRecord(summary.selected_fixture);
   const trade = asRecord(summary.trade);
   const shouldTrade = Boolean(summary.should_trade);
+  const rationale = String(summary.rationale || "The agent compared football priors with market pricing and did not expose private chain-of-thought.");
+
   return (
-    <article className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.045] p-5">
+    <article className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.04] p-5">
       <div className="flex items-start gap-3">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-emerald-300/30 bg-emerald-300/10 text-emerald-300">
-          <CheckCircle2 size={17} />
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-300/30 bg-emerald-300/10 text-emerald-300">
+          <CheckCircle2 size={18} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-300">Final decision</div>
           <h3 className="mt-1 font-display text-xl tracking-[-0.02em]">{shouldTrade ? "Live trade submitted" : "No-trade decision"}</h3>
-          <p className="mt-2 text-sm leading-relaxed text-white/70">{String(summary.rationale || "The agent compared football priors with market pricing and did not expose private chain-of-thought.")}</p>
+
+          {/* Rationale rendered as markdown */}
+          <div className="mt-3 rounded-xl border border-white/[0.07] bg-black/20 px-4 py-3">
+            <MarkdownContent content={rationale} />
+          </div>
+
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MiniStat label="Fixture" value={String(fixture?.name || fixture?.fixture_id || "n/a")} />
             <MiniStat label="Prediction" value={`${String(summary.prediction_outcome || "n/a")} ${String(summary.prediction_probability_display || "")}`} />
             <MiniStat label="Market" value={String(summary.market_probability_display || "n/a")} />
             <MiniStat label="Edge" value={`${String(summary.edge_pp ?? "n/a")} pp`} />
           </div>
+
           {trade && (
-            <div className="mt-4 rounded-xl border border-white/[0.08] bg-black/20 p-3 font-mono text-[11px] text-white/60">
-              {String(trade.direction || "none").toUpperCase()} {String(trade.team_code || "no team")} size ${String(trade.size_usdc || "0")} limit {String(trade.limit_price ?? "n/a")}
+            <div className="mt-4 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] p-3 font-mono text-[11px] text-emerald-200/80">
+              <span className="font-semibold">{String(trade.direction || "none").toUpperCase()}</span>{" "}
+              {String(trade.team_code || "no team")}{" "}
+              size <span className="text-emerald-300">${String(trade.size_usdc || "0")}</span>{" "}
+              limit <span className="text-emerald-300">{String(trade.limit_price ?? "n/a")}</span>
             </div>
           )}
         </div>
@@ -507,6 +873,7 @@ function DecisionCard({ summary }: { summary: Record<string, unknown> }) {
   );
 }
 
+// ─── Shared small components ───────────────────────────────────────────────────
 function Metric({ label, value, icon: Icon }: { label: string; value: string; icon: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
     <div className="border border-white/[0.08] bg-white/[0.02] p-5">
@@ -546,7 +913,11 @@ function StatusPill({ status }: { status: string }) {
   const normalized = status.toLowerCase();
   const ok = normalized === "completed" || normalized === "success";
   const running = normalized === "running" || normalized === "live";
-  const color = ok ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-300" : running ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-300" : "border-white/10 bg-white/[0.04] text-white/60";
+  const color = ok
+    ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-300"
+    : running
+    ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-300"
+    : "border-white/10 bg-white/[0.04] text-white/60";
   return <span className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] ${color}`}>{status}</span>;
 }
 
