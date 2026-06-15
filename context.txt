@@ -57,3 +57,9 @@ https://stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/listings
 https://stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/markets/{fixture_id}
 https://stair-ai.com/api#tag/polymarket/GET/v1/data/polymarket/markets/{fixture_id}/settlement
 https://stair-ai.com/api#tag/proxy
+
+
+
+https://polymarket.com/profile/0x5aCb6C3F6eb9E596BDD8240F6B60d48479fC93eC
+https://stair-ai.com/arena/c39288da-78e8-49c1-8e42-e5c2024dcb34
+https://stair-ai.com/arena/c39288da-78e8-49c1-8e42-e5c2024dcb34/reasoning-ledger

@@ -9,11 +9,26 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = Path(__file__).resolve().parent
 STORAGE_DIR = BACKEND_DIR / "storage"
 
+def load_env() -> None:
+    env_path = ROOT / ".env"
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+load_env()
+
 ARENA_BASE_URL = os.environ.get("ARENA_BASE_URL", "https://stair-ai.com").rstrip("/")
 SUPABASE_URL = "https://ezvbmtvrvzageqixvdak.supabase.co"
 SUPABASE_KEY = "sb_publishable__m8bOkD05ToFwATpaWST5w_2-3fGS7V"
 
-OPENROUTER_MODEL = "deepseek/deepseek-v4-pro"
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "nex-agi/nex-n2-pro:free")
 WEB_SEARCH_BACKEND = os.environ.get("WEB_SEARCH_BACKEND", "google")
 
 SPORTMONKS_SEASON_ID = 26618
@@ -26,19 +41,6 @@ COUNTRY_IDS = {
     "South Africa": 211,
     "ZAF": 211,
 }
-
-
-def load_env() -> None:
-    env_path = ROOT / ".env"
-    if not env_path.exists():
-        return
-
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
 def arena_headers() -> dict[str, str]:
