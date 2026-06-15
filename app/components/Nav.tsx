@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { LayoutDashboard, ArrowUpRight } from "lucide-react";
+import { LayoutDashboard, ArrowUpRight, UserRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 const SECTIONS = [
@@ -122,10 +122,16 @@ export default function Nav() {
 
         <div className="flex items-center gap-3">
           {signedIn ? (
-            <a href="/dashboard" className="btn btn-primary !py-2 !px-4 !text-sm">
-              <LayoutDashboard size={14} />
-              Dashboard
-            </a>
+            <>
+              <a href="/profile" className="hidden items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-200 sm:inline-flex">
+                <UserRound size={14} />
+                Profile
+              </a>
+              <a href="/dashboard" className="btn btn-primary !py-2 !px-4 !text-sm">
+                <LayoutDashboard size={14} />
+                Dashboard
+              </a>
+            </>
           ) : (
             <a href="/auth" className="btn btn-primary !py-2 !px-4 !text-sm">
               Mission Control

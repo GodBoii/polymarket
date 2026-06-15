@@ -21,6 +21,7 @@ import {
   Sparkles,
   Target,
   TerminalSquare,
+  UserRound,
   Wrench,
   XCircle,
   Zap,
@@ -424,6 +425,10 @@ function Dashboard({ email }: { email: string }) {
             <Link href="/console" className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/70 hover:border-cyan-300/40 hover:text-cyan-300">
               <TerminalSquare size={14} />
               Console
+            </Link>
+            <Link href="/profile" className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/70 hover:border-cyan-300/40 hover:text-cyan-300">
+              <UserRound size={14} />
+              Profile
             </Link>
             <button onClick={signOut} className="grid h-9 w-9 place-items-center rounded-full border border-white/10 text-white/70 hover:border-red-400/40 hover:text-red-300" title="Sign out">
               <LogOut size={14} />
