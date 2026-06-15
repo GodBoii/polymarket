@@ -134,13 +134,19 @@ Mode: {mode}
 Requested fixture id: {fixture_id if fixture_id is not None else "auto-select"}
 Dry run: {dry_run}
 
+Tournament objective:
+- Win by making accurate predictions, placing disciplined positive-edge bets, and submitting a complete high-quality Reasoning Ledger.
+- The ledger is scored by Stair AI, so use the available ledger checkpoint tool to preserve the evidence, data quality, probability logic, market comparison, prediction, and order/skip rationale.
+- Never fabricate ledger facts. Record missing or weak data explicitly.
+
 Workflow:
 1. Delegate fixture selection to fixture_agent. If a requested fixture id is provided, fixture_agent may use it only if it is still a sensible World Cup fixture; otherwise select the best available candidate.
 2. Call get_account_status so the team sees wallet balance, open positions, and any prior bets already tied to the slate.
 3. Use the selected fixture_id to gather match context, historical evidence, Polymarket context, and current exposure.
-4. Submit a Stair AI prediction before any bet.
-5. Place a guarded buy-YES bet on the best available outcome. Minimum order size is 1 USDC.
-6. Respond naturally in Markdown with the chosen fixture, evidence, market view, prediction, bet, confidence, and main factors.
+4. Call record_ledger_checkpoint after the evidence stage, after the market/exposure stage, before prediction submission, and after the final order/skip decision.
+5. Submit a Stair AI prediction before any bet.
+6. Place a guarded buy-YES bet on the best available outcome. Minimum order size is 1 USDC.
+7. Respond naturally in Markdown with the chosen fixture, evidence, market view, prediction, bet, confidence, and main factors.
 """
 
     final_text = ""

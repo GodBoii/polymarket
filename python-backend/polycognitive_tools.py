@@ -268,6 +268,7 @@ class PolycognitiveToolkit(Toolkit):
                 self.get_match_context,
                 self.get_polymarket_context,
                 self.get_current_exposure,
+                self.record_ledger_checkpoint,
                 self.submit_prediction_to_stair,
                 self.place_bet,
             ],
@@ -507,6 +508,33 @@ class PolycognitiveToolkit(Toolkit):
         self.last_exposure = result
         positions = result.get("positions") or []
         self._record_tool("get_current_exposure", f"arena: Fetched current exposure for fixture {fixture_id}. Open positions: {len(positions)}.", {"fixture_id": fixture_id}, result, success, "exposure")
+        return result
+
+    def record_ledger_checkpoint(
+        self,
+        stage: str,
+        summary: str,
+        evidence: dict[str, Any] | None = None,
+        data_quality: str = "partial",
+        missing_data: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Add a schema-safe Thinking checkpoint to the Reasoning Ledger trace."""
+        stage_value = str(stage or "checkpoint")[:80]
+        summary_value = str(summary or "No summary provided.").strip()
+        payload = {
+            "stage": stage_value,
+            "summary": summary_value,
+            "evidence": evidence or {},
+            "data_quality": data_quality,
+            "missing_data": missing_data or [],
+        }
+        record = self.ledger.thinking(
+            prompt=f"Ledger checkpoint: {stage_value}",
+            description=f"Agent-authored ledger checkpoint for {stage_value}.",
+            output_payload=payload,
+        )
+        result = {"recorded": True, "stage": stage_value, "record_id": record["record_id"]}
+        _emit(self.event_sink, "ledger_record", "ledger_thinking", {"stage": stage_value, "record_id": record["record_id"]})
         return result
 
     def submit_prediction_to_stair(self, fixture_id: str, outcome: str, probability: float) -> dict[str, Any]:
