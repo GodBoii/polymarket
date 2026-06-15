@@ -33,6 +33,14 @@ SEARCH_RULES = [
     "Search with focused queries and summarize the takeaway instead of copying large search result dumps, long lineups, or long tables into the final answer.",
 ]
 
+LEDGER_QUALITY_RULES = [
+    "This is the Stair AI World Cup Agent Arena. Tournament ranking depends on both correct predictions/bets and the quality/completeness of the submitted Reasoning Ledger trace.",
+    "Treat the Reasoning Ledger as a scored artifact: every major observation, data source, probability judgment, market comparison, prediction, and order/skip decision must be represented clearly.",
+    "Use record_ledger_checkpoint after major reasoning milestones when a concise, high-quality audit note would help Stair evaluate the run: evidence gathered, data quality/gaps, probability estimate, edge calculation, and final action rationale.",
+    "Do not fabricate data for ledger quality. If a source is missing, stale, unavailable, or low-confidence, say that explicitly in the checkpoint.",
+    "Do not manually invent raw ledger IDs, timestamps, schema fields, or batch payloads. Use the provided tools; the backend will create schema-valid records and submit them to Stair AI.",
+]
+
 
 def build_web_search_tools() -> WebSearchTools:
     return WebSearchTools(
@@ -56,6 +64,7 @@ def fixture_agent(db: JsonDb, session_id: str, fixture_tools: FixtureSelectionTo
             *NATURAL_RESPONSE_RULES,
             *ULTRA_THINK_RULES,
             *SEARCH_RULES,
+            *LEDGER_QUALITY_RULES,
             "Call get_worldcup_match_slate before selecting a fixture so you can see the full listed match slate with dates and any existing open exposure.",
             "Then call get_worldcup_fixture_candidates before selecting a fixture.",
             "Choose the strongest fixture using named teams, kickoff timing, venue/weather context, Polymarket mapping, market count, midpoint count, odds coverage, and whether the account already has open exposure on that fixture.",
@@ -92,20 +101,24 @@ def polycognitive_team(
             *ULTRA_THINK_RULES,
             *BUDGET_RULES,
             *SEARCH_RULES,
+            *LEDGER_QUALITY_RULES,
             "First delegate fixture selection to fixture_agent and use its selected fixture_id.",
             "Call get_account_status early in the run and use it as the bankroll and exposure source of truth.",
             "Then call get_match_context for football and historical evidence.",
             "Then call get_polymarket_context and get_current_exposure before any prediction or bet.",
+            "After match context is gathered, call record_ledger_checkpoint with the most important football evidence, historical priors, data quality, and missing data.",
+            "After Polymarket context and exposure are gathered, call record_ledger_checkpoint with market prices, liquidity/quality notes, current exposure, and any execution constraints.",
+            "Before submit_prediction_to_stair, call record_ledger_checkpoint with your independent three-outcome probabilities, main reasons, confidence, and the exact outcome you intend to submit.",
             "Always convert the evidence into a three-outcome probability view for home, draw, and away. Think deeply - which team is objectively stronger based on all available data? State your opinion explicitly.",
             "Compare your probabilities to the available market prices and choose the best buy-YES outcome. Prefer backing the stronger team unless the market price makes it a poor value bet.",
             "Use account status and current exposure to limit bets on any single fixture to a maximum of 2. You may place up to 2 bets on the same fixture.",
             "Submit a prediction to Stair AI with submit_prediction_to_stair before placing the bet.",
             "Place a bet with place_bet on the best available outcome following the budget rules above.",
+            "After prediction/order execution, call record_ledger_checkpoint with the final prediction, market edge, order or skip result, and why this action best serves the tournament objective.",
             "Do not end the run without choosing an outcome unless order submission is technically impossible.",
             "Use current exposure to ensure you do not exceed 2 bets on the same fixture. If there is less than 2 open exposures on the fixture, you may place another bet on it.",
             "Keep final output natural: selected fixture, evidence read, probability view, team strength opinion, market comparison, prediction submitted, bet placed, confidence, and main factors.",
-            f"If you need any additional information (live scores, breaking news, team updates, market trends, or any other context), use WebSearchTools with the configured `{WEB_SEARCH_BACKEND}` backend.",
-            "Specifically, take another bet on the USA VS Paraguay fixture",
+            f"If you need any additional information (live scores, breaking news, team updates, market trends, or any other context), use WebSearchTools with the configured `{WEB_SEARCH_BACKEND}` backend.",  
         ],
         markdown=True,
         telemetry=False,

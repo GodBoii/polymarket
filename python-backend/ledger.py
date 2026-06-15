@@ -20,7 +20,7 @@ ACTING_PARAMETERS_MAX_BYTES = 16 * 1024
 OTHER_DATA_MAX_BYTES = 16 * 1024
 TRUNCATION_SUFFIX = " ... [TRUNCATED]"
 ARENA_BASE_URL = os.environ.get("ARENA_BASE_URL", "https://stair-ai.com").rstrip("/")
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "deepseek/deepseek-v4-pro")
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "nex-agi/nex-n2-pro:free")
 
 
 def arena_headers() -> dict[str, str]:
