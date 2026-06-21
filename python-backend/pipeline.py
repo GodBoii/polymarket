@@ -1,18 +1,113 @@
 import argparse
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date, datetime, time as datetime_time, timedelta, timezone
 from typing import Any, Callable
 
 from agents import polycognitive_team
 from config import DEFAULT_FIXTURE_ID, build_db, load_env
 from ledger import LedgerSink, build_model_invocation
-from polycognitive_tools import FixtureSelectionToolkit, PolycognitiveToolkit
+from polycognitive_tools import PolycognitiveToolkit
 from scout import clamp_probability, edge_pp, probability_to_percent
 from toolkits import ArenaDataToolkit, ArenaTradingToolkit
 from utils import run_content
 
 
 EventSink = Callable[[str, str, dict[str, Any]], None]
+
+
+def _parse_date(value: str | date | None) -> date:
+    if isinstance(value, date):
+        return value
+    if value:
+        return datetime.fromisoformat(str(value)).date()
+    return datetime.now(timezone.utc).date()
+
+
+def _fixture_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    normalized = value.replace("Z", "+00:00")
+    if "T" not in normalized and " " in normalized:
+        normalized = normalized.replace(" ", "T")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _fixture_in_target_window(value: str | None, target: date) -> bool:
+    kickoff = _fixture_datetime(value)
+    if kickoff is None:
+        return False
+    start = datetime.combine(target, datetime_time.min, tzinfo=timezone.utc)
+    end = start + timedelta(hours=36)
+    return start <= kickoff < end
+
+
+def discover_pre_match_fixtures(
+    data: ArenaDataToolkit | None = None,
+    trading: ArenaTradingToolkit | None = None,
+    target_date: str | date | None = None,
+) -> list[dict[str, Any]]:
+    """Return listed, mapped fixtures that are currently in the pre-match window."""
+    from scout import flatten_schedule
+
+    data = data or ArenaDataToolkit()
+    trading = trading or ArenaTradingToolkit(dry_run=True)
+    selected_date = _parse_date(target_date)
+    schedule = data.get_sportmonks_schedule()
+    fixtures = flatten_schedule(schedule)
+    listings = data.get_polymarket_listings()
+    listed_fixture_ids = {
+        str(row.get("fixture_id") or row.get("fixture_code"))
+        for row in listings.get("fixtures") or []
+        if row.get("fixture_id") is not None or row.get("fixture_code") is not None
+    }
+
+    slate: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for fixture in fixtures:
+        fixture_id = fixture.get("fixture_id")
+        fixture_key = str(fixture_id) if fixture_id is not None else ""
+        if not fixture_key or fixture_key in seen:
+            continue
+        if not fixture.get("has_named_participants"):
+            continue
+        if listed_fixture_ids and fixture_key not in listed_fixture_ids:
+            continue
+        if not _fixture_in_target_window(fixture.get("starting_at"), selected_date):
+            continue
+        try:
+            market = data.get_arena_polymarket_market(fixture_key)
+        except Exception:
+            continue
+        outcomes = market.get("outcomes") if isinstance(market, dict) else []
+        if not isinstance(outcomes, list) or not outcomes:
+            continue
+        try:
+            match = trading.get_match(fixture_key)
+        except Exception:
+            continue
+        current_window = str(match.get("current_window") or "").upper()
+        if current_window != "PRE_MATCH":
+            continue
+        seen.add(fixture_key)
+        slate.append(
+            {
+                **fixture,
+                "fixture_id": int(fixture_id),
+                "fixture_code": fixture_key,
+                "current_window": current_window,
+                "polymarket_event_slug": market.get("polymarket_event_slug"),
+                "market_count": len(outcomes),
+            }
+        )
+    return slate
 
 
 def emit(event_sink: EventSink | None, event_type: str, stage: str, payload: dict[str, Any]) -> None:
@@ -72,8 +167,10 @@ def _build_summary(
     return summary
 
 
-def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink: EventSink | None = None, mode: str = "manual") -> dict[str, Any]:
+def run_match_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink: EventSink | None = None, mode: str = "manual") -> dict[str, Any]:
     load_env()
+    if fixture_id is None:
+        fixture_id = DEFAULT_FIXTURE_ID
     db = build_db()
     data = ArenaDataToolkit()
     trading = ArenaTradingToolkit(dry_run=dry_run)
@@ -85,7 +182,7 @@ def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink
         profile_sync = {"synced": False, "error": f"{type(exc).__name__}: {exc}"}
         emit(event_sink, "stage_completed", "agent_profile", profile_sync)
     requested_fixture_id = fixture_id
-    mode = mode if mode in {"auto", "manual"} else "auto"
+    mode = mode if mode in {"daily", "auto", "manual"} else "manual"
     session_seed = fixture_id or DEFAULT_FIXTURE_ID
     session_id = f"polycognitive:{session_seed}:{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
     ledger = LedgerSink(session_id)
@@ -103,14 +200,14 @@ def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink
 
     # --- Planning record: show the agent's analysis strategy ---
     plan = ledger.planning(
-        goal=f"Analyze World Cup fixture and place optimal prediction-market bet (mode={mode}, dry_run={dry_run}).",
+        goal=f"Analyze assigned World Cup fixture {fixture_id} and place optimal pre-match prediction-market bet (mode={mode}, dry_run={dry_run}).",
         description="Pre-match analysis and trading plan for the World Cup Arena.",
         steps=[
-            {"index": 0, "description": "Select the best available World Cup fixture with Polymarket coverage and Sportmonks data."},
+            {"index": 0, "description": f"Use the backend-assigned fixture_id {fixture_id}; do not select another fixture."},
             {"index": 1, "description": "Gather match context: Sportmonks fixture data, lineups, odds, xG, venue, weather, and Supabase historical priors.", "depends_on": [0]},
-            {"index": 2, "description": "Fetch Polymarket context: event mapping, Gamma markets, CLOB midpoint prices for all three outcomes.", "depends_on": [0]},
-            {"index": 3, "description": "Synthesize evidence into independent probability estimates for home/draw/away. Compare to market prices to find edge.", "depends_on": [1, 2]},
-            {"index": 4, "description": "Submit prediction to Stair AI and place guarded buy-YES order on the best positive-edge outcome.", "depends_on": [3]},
+            {"index": 2, "description": "Fetch Polymarket context and executable CLOB bid/ask/depth data for all three outcomes.", "depends_on": [0]},
+            {"index": 3, "description": "Synthesize evidence into independent probability estimates for home/draw/away. Compare to executable ask prices to find edge.", "depends_on": [1, 2]},
+            {"index": 4, "description": "Submit prediction to Stair AI and place guarded pre-match buy-YES order on the best positive-edge outcome.", "depends_on": [3]},
         ],
         contingencies=[
             "Skip order if no positive edge exceeds the minimum threshold.",
@@ -121,10 +218,9 @@ def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink
     emit(event_sink, "ledger_record", "ledger", plan)
     emit(event_sink, "stage_started", "polycognitive", {"session_id": session_id, "mode": mode, "fixture_id": fixture_id})
 
-    fixture_tools = FixtureSelectionToolkit(data, ledger, trading=trading, event_sink=event_sink)
     arena_tools = PolycognitiveToolkit(data, trading, ledger, dry_run=dry_run, event_sink=event_sink)
     arena_tools.last_agent_profile = profile_sync if isinstance(profile_sync, dict) else None
-    team = polycognitive_team(db, session_id, fixture_tools, arena_tools)
+    team = polycognitive_team(db, session_id, arena_tools)
 
     prompt = f"""
 Start a World Cup Arena run.
@@ -140,13 +236,13 @@ Tournament objective:
 - Never fabricate ledger facts. Record missing or weak data explicitly.
 
 Workflow:
-1. Delegate fixture selection to fixture_agent. If a requested fixture id is provided, fixture_agent may use it only if it is still a sensible World Cup fixture; otherwise select the best available candidate.
+1. Use the assigned fixture_id exactly as provided: {fixture_id}. Do not delegate fixture selection and do not switch fixtures.
 2. Call get_account_status so the team sees wallet balance, open positions, and any prior bets already tied to the slate.
-3. Use the selected fixture_id to gather match context, historical evidence, Polymarket context, and current exposure.
+3. Use fixture_id {fixture_id} to gather match context, historical evidence, Polymarket context, executable market snapshot, and current exposure.
 4. Call record_ledger_checkpoint after the evidence stage, after the market/exposure stage, before prediction submission, and after the final order/skip decision.
 5. Submit a Stair AI prediction before any bet.
-6. Place a guarded buy-YES bet on the best available outcome. Minimum order size is 1 USDC.
-7. Respond naturally in Markdown with the chosen fixture, evidence, market view, prediction, bet, confidence, and main factors.
+6. Place a guarded pre-match buy-YES bet on the best available outcome if technically executable. Minimum order size is 1 USDC and maximum order size is 15 USDC.
+7. Respond naturally in Markdown with the assigned fixture, evidence, market view, prediction, bet or technical skip, confidence, and main factors.
 """
 
     final_text = ""
@@ -213,7 +309,7 @@ Workflow:
         emit(event_sink, "ledger_record", "ledger_thinking", {"stage": "polymarket_digest"})
 
     # --- Intermediate Thinking: probability & edge analysis ---
-    selected = (fixture_tools.last_candidates or {}).get("selected") or {}
+    selected = {}
     prediction_submission = arena_tools.last_prediction_submission or {}
     prediction_params = (prediction_submission.get("record") or {}).get("parameters") or {}
     order_result = arena_tools.last_order or {"submitted": False, "dry_run": dry_run, "skipped": True}
@@ -304,7 +400,7 @@ Workflow:
         "session_id": session_id,
         "mode": mode,
         "dry_run": dry_run,
-        "scout": fixture_tools.last_candidates,
+        "scout": None,
         "fixture": summary.get("selected_fixture") or {},
         "fixture_selection": {"selected": selected, "natural_response": None},
         "match_context": match_context,
@@ -321,13 +417,105 @@ Workflow:
     }
 
 
+def run_daily_pipeline(
+    target_date: str | date | None = None,
+    dry_run: bool = True,
+    event_sink: EventSink | None = None,
+    concurrency: int = 2,
+) -> dict[str, Any]:
+    load_env()
+    selected_date = _parse_date(target_date)
+    batch_id = f"daily:{selected_date.isoformat()}:{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    emit(
+        event_sink,
+        "batch_started",
+        "daily_batch",
+        {"batch_id": batch_id, "target_date": selected_date.isoformat(), "dry_run": dry_run, "concurrency": concurrency},
+    )
+    data = ArenaDataToolkit()
+    trading = ArenaTradingToolkit(dry_run=True)
+    fixtures = discover_pre_match_fixtures(data=data, trading=trading, target_date=selected_date)
+    emit(
+        event_sink,
+        "stage_completed",
+        "fixture_discovery",
+        {"batch_id": batch_id, "target_date": selected_date.isoformat(), "fixture_count": len(fixtures), "fixtures": fixtures},
+    )
+    if not fixtures:
+        result = {
+            "batch_id": batch_id,
+            "mode": "daily",
+            "dry_run": dry_run,
+            "target_date": selected_date.isoformat(),
+            "fixture_count": 0,
+            "fixtures": [],
+            "results": [],
+            "message": "No pre-match fixtures available for the selected date.",
+        }
+        emit(event_sink, "batch_completed", "daily_batch", result)
+        return result
+
+    max_workers = max(1, min(int(concurrency or 1), len(fixtures), 4))
+    results: list[dict[str, Any]] = []
+
+    def run_one(fixture: dict[str, Any]) -> dict[str, Any]:
+        fixture_id = int(fixture["fixture_id"])
+        emit(event_sink, "fixture_run_started", "daily_batch", {"batch_id": batch_id, "fixture": fixture, "fixture_id": fixture_id})
+
+        def child_emit(event_type: str, stage: str, payload: dict[str, Any]) -> None:
+            emit(event_sink, event_type, stage, {"batch_id": batch_id, "fixture_id": fixture_id, **payload})
+
+        try:
+            child_result = run_match_pipeline(fixture_id=fixture_id, dry_run=dry_run, event_sink=child_emit, mode="daily")
+            emit(event_sink, "fixture_run_completed", "daily_batch", {"batch_id": batch_id, "fixture_id": fixture_id, "status": "completed"})
+            return {"fixture": fixture, "status": "completed", "result": child_result}
+        except Exception as exc:
+            error = {"fixture": fixture, "status": "error", "error": f"{type(exc).__name__}: {exc}"}
+            emit(event_sink, "fixture_run_completed", "daily_batch", {"batch_id": batch_id, "fixture_id": fixture_id, **error})
+            return error
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_fixture = {executor.submit(run_one, fixture): fixture for fixture in fixtures}
+        for future in as_completed(future_to_fixture):
+            results.append(future.result())
+
+    results.sort(key=lambda row: (row.get("fixture") or {}).get("starting_at") or "")
+    completed_count = len([row for row in results if row.get("status") == "completed"])
+    error_count = len([row for row in results if row.get("status") == "error"])
+    result = {
+        "batch_id": batch_id,
+        "mode": "daily",
+        "dry_run": dry_run,
+        "target_date": selected_date.isoformat(),
+        "fixture_count": len(fixtures),
+        "completed_count": completed_count,
+        "error_count": error_count,
+        "fixtures": fixtures,
+        "results": results,
+        "message": f"Completed {completed_count} of {len(fixtures)} pre-match fixture runs.",
+    }
+    emit(event_sink, "batch_completed", "daily_batch", result)
+    return result
+
+
+def run_pipeline(fixture_id: int | None = None, dry_run: bool = True, event_sink: EventSink | None = None, mode: str = "manual") -> dict[str, Any]:
+    if mode in {"daily", "auto"} and fixture_id is None:
+        return run_daily_pipeline(dry_run=dry_run, event_sink=event_sink)
+    return run_match_pipeline(fixture_id=fixture_id, dry_run=dry_run, event_sink=event_sink, mode=mode)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the World Cup Arena polycognitive architecture.")
     parser.add_argument("--fixture-id", type=int, default=None)
-    parser.add_argument("--mode", choices=["auto", "manual"], default="auto")
+    parser.add_argument("--mode", choices=["daily", "auto", "manual"], default="daily")
+    parser.add_argument("--target-date", default=None)
+    parser.add_argument("--concurrency", type=int, default=2)
     parser.add_argument("--live-order", action="store_true", help="Actually submit orders and ledger records.")
     args = parser.parse_args()
-    result = run_pipeline(fixture_id=args.fixture_id, dry_run=not args.live_order, mode=args.mode)
+    if args.mode in {"daily", "auto"} and args.fixture_id is None:
+        result = run_daily_pipeline(target_date=args.target_date, dry_run=not args.live_order, concurrency=args.concurrency)
+    else:
+        result = run_match_pipeline(fixture_id=args.fixture_id, dry_run=not args.live_order, mode=args.mode)
     print(json.dumps(result, indent=2, ensure_ascii=True, default=str))
 
 
