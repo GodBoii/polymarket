@@ -12,7 +12,7 @@ import requests
 
 from config import ARENA_BASE_URL, arena_headers, load_env
 from http_logging import setup_backend_logging
-from pipeline import run_pipeline
+from pipeline import run_daily_pipeline, run_match_pipeline
 from store import LocalRunStore, SupabaseRunStore
 
 
@@ -23,6 +23,10 @@ app = FastAPI(title="Polymarket Arena Agent Backend")
 allowed_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
     "https://polymarket-six-eta.vercel.app",
 ]
 extra_origin = os.environ.get("FRONTEND_ORIGIN")
@@ -32,6 +36,7 @@ if extra_origin:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,9 +44,11 @@ app.add_middleware(
 
 
 class RunRequest(BaseModel):
-    mode: str = "auto"
+    mode: str = "daily"
     fixture_id: int | None = None
     dry_run: bool = True
+    target_date: str | None = None
+    concurrency: int = 2
 
 
 def live_orders_enabled() -> bool:
@@ -241,8 +248,16 @@ def create_run(request: RunRequest) -> dict[str, Any]:
     s = store()
     initial_fixture_id = request.fixture_id or 0
     s.create_run(run_id, initial_fixture_id, mode=request.mode)
-    result = run_pipeline(request.fixture_id, dry_run=request.dry_run, mode=request.mode, event_sink=lambda *_args, **_kwargs: None)
-    s.update_run(run_id, status="completed", fixture=result.get("fixture"), result=result)
+    if request.mode in {"daily", "auto"} and request.fixture_id is None:
+        result = run_daily_pipeline(
+            target_date=request.target_date,
+            dry_run=request.dry_run,
+            concurrency=request.concurrency,
+            event_sink=lambda *_args, **_kwargs: None,
+        )
+    else:
+        result = run_match_pipeline(request.fixture_id, dry_run=request.dry_run, mode=request.mode, event_sink=lambda *_args, **_kwargs: None)
+    s.update_run(run_id, status="completed", fixture=result.get("fixture") or {}, result=result)
     return {"id": run_id, "status": "completed", "result": result}
 
 
@@ -252,13 +267,15 @@ async def websocket_run(websocket: WebSocket) -> None:
     s = store()
     try:
         message = await websocket.receive_json()
-        mode = str(message.get("mode") or ("manual" if message.get("fixture_id") else "auto"))
+        mode = str(message.get("mode") or ("manual" if message.get("fixture_id") else "daily"))
         fixture_id = int(message["fixture_id"]) if message.get("fixture_id") else None
         dry_run = bool(message.get("dry_run", True))
+        target_date = message.get("target_date")
+        concurrency = int(message.get("concurrency") or 2)
         require_live_order_permission(dry_run)
         run_id = str(uuid.uuid4())
         s.create_run(run_id, fixture_id or 0, mode=mode)
-        await websocket.send_json({"type": "run_started", "run_id": run_id, "fixture_id": fixture_id, "mode": mode})
+        await websocket.send_json({"type": "run_started", "run_id": run_id, "fixture_id": fixture_id, "mode": mode, "target_date": target_date})
 
         def emit(event_type: str, stage: str, payload: dict[str, Any]) -> None:
             s.add_event(run_id, event_type, stage, payload)
@@ -269,7 +286,10 @@ async def websocket_run(websocket: WebSocket) -> None:
             )
 
         loop = asyncio.get_running_loop()
-        result = await asyncio.to_thread(run_pipeline, fixture_id, dry_run, emit, mode)
+        if mode in {"daily", "auto"} and fixture_id is None:
+            result = await asyncio.to_thread(run_daily_pipeline, target_date, dry_run, emit, concurrency)
+        else:
+            result = await asyncio.to_thread(run_match_pipeline, fixture_id, dry_run, emit, mode)
         selected_fixture_id = (result.get("fixture") or {}).get("fixture_id") or fixture_id or 0
         s.update_run(run_id, status="completed", fixture_id=selected_fixture_id, fixture=result.get("fixture"), result=result)
         await websocket.send_json({"type": "run_completed", "run_id": run_id, "result": result})

@@ -28,7 +28,7 @@ ARENA_BASE_URL = os.environ.get("ARENA_BASE_URL", "https://stair-ai.com").rstrip
 SUPABASE_URL = "https://ezvbmtvrvzageqixvdak.supabase.co"
 SUPABASE_KEY = "sb_publishable__m8bOkD05ToFwATpaWST5w_2-3fGS7V"
 
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "nex-agi/nex-n2-pro:free")
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "xiaomi/mimo-v2.5-pro")
 WEB_SEARCH_BACKEND = os.environ.get("WEB_SEARCH_BACKEND", "google")
 
 SPORTMONKS_SEASON_ID = 26618
