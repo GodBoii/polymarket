@@ -7,7 +7,7 @@ from agno.run.agent import RunStatus
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "nex-agi/nex-n2-pro:free")
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "xiaomi/mimo-v2.5-pro")
 
 
 def load_env() -> None:
