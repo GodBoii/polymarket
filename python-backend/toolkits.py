@@ -27,6 +27,12 @@ class ArenaDataToolkit(Toolkit):
                 self.get_polymarket_mapping,
                 self.get_polymarket_event,
                 self.get_polymarket_midpoint,
+                self.get_polymarket_book,
+                self.get_polymarket_spread,
+                self.get_polymarket_price,
+                self.get_polymarket_last_trade_price,
+                self.get_polymarket_tick_size,
+                self.get_polymarket_price_history,
                 self.get_polymarket_listings,
                 self.get_arena_polymarket_market,
                 self.get_arena_polymarket_settlement,
@@ -123,6 +129,78 @@ class ArenaDataToolkit(Toolkit):
         response.raise_for_status()
         return response.json()
 
+    def get_polymarket_book(self, token_id: str) -> dict[str, Any]:
+        """Fetch the Polymarket CLOB order book for one outcome token."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/data/proxy/polymarket-clob/book",
+            params={"token_id": token_id},
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_polymarket_spread(self, token_id: str) -> dict[str, Any]:
+        """Fetch the current CLOB spread for one outcome token."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/data/proxy/polymarket-clob/spread",
+            params={"token_id": token_id},
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_polymarket_price(self, token_id: str, side: str) -> dict[str, Any]:
+        """Fetch the best CLOB price for BUY or SELL side for one outcome token."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/data/proxy/polymarket-clob/price",
+            params={"token_id": token_id, "side": str(side).upper()},
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_polymarket_last_trade_price(self, token_id: str) -> dict[str, Any]:
+        """Fetch the last traded price for one outcome token."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/data/proxy/polymarket-clob/last-trade-price",
+            params={"token_id": token_id},
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_polymarket_tick_size(self, token_id: str) -> dict[str, Any]:
+        """Fetch the minimum valid price increment for one outcome token."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/data/proxy/polymarket-clob/tick-size",
+            params={"token_id": token_id},
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_polymarket_price_history(self, token_id: str, interval: str = "1d") -> dict[str, Any]:
+        """Fetch recent CLOB price history for one outcome token."""
+        response = logged_request(
+            "GET",
+            f"{ARENA_BASE_URL}/api/v1/data/proxy/polymarket-clob/prices-history",
+            params={"market": token_id, "interval": interval},
+            headers=arena_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def get_arena_polymarket_market(self, fixture_code: str) -> dict[str, Any]:
         """Fetch arena-normalized Polymarket market data for a fixture id."""
         response = logged_request(
@@ -207,6 +285,7 @@ class ArenaTradingToolkit(Toolkit):
                 self.get_match,
                 self.get_exposure,
                 self.submit_order,
+                self.submit_fok_order,
                 self.get_order_status,
                 self.close_order,
             ],
@@ -298,6 +377,38 @@ class ArenaTradingToolkit(Toolkit):
         )
         response.raise_for_status()
         return response.json()
+
+    def submit_fok_order(
+        self,
+        fixture_code: str,
+        team_code: str,
+        usd_size: str,
+        worst_price: float,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Submit an all-or-nothing buy-YES arena order, or return the payload when dry_run is enabled."""
+        payload = {
+            "fixture_id": fixture_code,
+            "team_code": team_code,
+            "usd_size": normalize_usd_size(usd_size),
+            "worst_price": normalize_limit_price(worst_price),
+            "idempotency_key": idempotency_key or str(uuid.uuid4()),
+        }
+        if self.dry_run:
+            return {"dry_run": True, "submitted": False, "payload": payload, "order_type": "fok"}
+
+        response = logged_request(
+            "POST",
+            f"{ARENA_BASE_URL}/api/v1/arena/orders_fok",
+            headers=arena_headers(),
+            json_body=payload,
+            timeout=60,
+        )
+        response.raise_for_status()
+        result = response.json()
+        if isinstance(result, dict):
+            result.setdefault("order_type", "fok")
+        return result
 
     def get_order_status(self, order_id: str) -> dict[str, Any]:
         """Fetch arena order status by order ID."""
