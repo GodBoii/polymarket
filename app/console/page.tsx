@@ -96,7 +96,7 @@ function ConsolePage({ sessionEmail }: { sessionEmail: string }) {
     const ws = new WebSocket(`${wsUrl}/ws/runs`);
     ws.onopen = () => {
       setLive(true);
-      ws.send(JSON.stringify({ fixture_id: Number(fixtureId), dry_run: !liveOrders }));
+      ws.send(JSON.stringify({ mode: "manual", fixture_id: Number(fixtureId), dry_run: !liveOrders }));
     };
     ws.onclose = () => {
       setLive(false);

@@ -70,6 +70,8 @@ const STAGE_LABELS: Record<string, string> = {
   exposure: "Exposure",
   prediction_submission: "Prediction",
   bet: "Bet",
+  daily_batch: "Daily Batch",
+  fixture_discovery: "Fixture Discovery",
   ledger_writer: "Ledger",
   decision: "Decision",
   account_status: "Account Status",
@@ -310,7 +312,7 @@ function Dashboard({ email }: { email: string }) {
         JSON.stringify(
           manualMode
             ? { mode: "manual", fixture_id: Number(fixtureId), dry_run: !liveOrders }
-            : { mode: "auto", dry_run: !liveOrders },
+            : { mode: "daily", dry_run: !liveOrders, concurrency: 2 },
         ),
       );
     };
@@ -335,7 +337,7 @@ function Dashboard({ email }: { email: string }) {
         if (parsed.type === "run_completed") {
           const result = parsed.result || {};
           const completedFixture = Number(result.fixture?.fixture_id || result.summary?.selected_fixture?.fixture_id || parsed.fixture_id || 0);
-          setActiveRun({ id: parsed.run_id, fixture_id: completedFixture, mode: result.mode || (manualMode ? "manual" : "auto"), status: "completed", result });
+          setActiveRun({ id: parsed.run_id, fixture_id: completedFixture, mode: result.mode || (manualMode ? "manual" : "daily"), status: "completed", result });
           setActiveStage("completed");
           setLive(false);
           loadRuns();
@@ -451,8 +453,8 @@ function Dashboard({ email }: { email: string }) {
                   Run the <span className="text-cyan-300">Polycognitive agent</span>.
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/58">
-                  The agent scouts World Cup markets, selects a match, gathers SportMonks, Supabase, and Polymarket evidence,
-                  then explains its prediction and can submit a real arena order when the strategy selects a trade.
+                  The agent fetches the pre-match slate, runs one fixed-fixture analysis per match, gathers SportMonks,
+                  Supabase, and Polymarket evidence, then can submit guarded arena orders.
                 </p>
               </div>
               <LiveBadge live={live} connecting={connecting} activeStage={stageLabel} />
@@ -474,7 +476,7 @@ function Dashboard({ email }: { email: string }) {
                   />
                   Enable live Stair orders
                 </label>
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">{manualMode ? "Manual fixture mode" : "Auto scout mode"}</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">{manualMode ? "Manual fixture mode" : "Daily pre-match mode"}</span>
               </div>
               {manualMode && (
                 <label>
@@ -496,7 +498,7 @@ function Dashboard({ email }: { email: string }) {
             <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4 text-xs leading-relaxed text-white/58">
               {liveOrders
                 ? "Live-order mode is enabled. The backend will require ALLOW_LIVE_ORDERS=true and can submit real Stair play-money orders."
-                : "Dry-run mode is enabled. The agent will still scout, predict, build the ledger, and prepare order payloads, but it will not submit live Stair orders."}
+                : "Dry-run mode is enabled. The agent will discover the pre-match slate, predict, build ledgers, and prepare guarded order payloads, but it will not submit live Stair orders."}
               <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
                 Backend live-orders capability: {backendLiveEnabled ? "enabled" : "disabled"}
               </div>
@@ -608,7 +610,7 @@ function Dashboard({ email }: { email: string }) {
                           <div className="font-mono text-xs text-white/85">#{String(i + 1).padStart(2, "0")} {run.id.slice(0, 8)}</div>
                           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/50">
                             <Target size={11} />
-                            <span>{run.mode === "auto" ? "Auto scout" : "Fixture"} {run.fixture_id || ""}</span>
+                            <span>{run.mode === "daily" || run.mode === "auto" ? "Daily slate" : "Fixture"} {run.fixture_id || ""}</span>
                           </div>
                           {run.created_at && (
                             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/35">
@@ -841,6 +843,13 @@ function DecisionCard({ summary }: { summary: Record<string, unknown> }) {
   const trade = asRecord(summary.trade);
   const shouldTrade = Boolean(summary.should_trade);
   const rationale = String(summary.rationale || "The agent compared football priors with market pricing and did not expose private chain-of-thought.");
+  const order = asRecord(trade?.order);
+  const payload = asRecord(order?.payload);
+  const teamCode = String(trade?.team_code || payload?.team_code || "no team");
+  const size = String(trade?.size_usdc || payload?.usd_size || "0");
+  const limit = String(trade?.limit_price ?? payload?.worst_price ?? payload?.limit_price ?? "n/a");
+  const status = String(trade?.order_status || order?.status || (trade?.submitted ? "submitted" : "prepared"));
+  const rejection = String(trade?.rejection_reason || trade?.error || "");
 
   return (
     <article className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.04] p-5">
@@ -866,10 +875,12 @@ function DecisionCard({ summary }: { summary: Record<string, unknown> }) {
 
           {trade && (
             <div className="mt-4 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.05] p-3 font-mono text-[11px] text-emerald-200/80">
-              <span className="font-semibold">{String(trade.direction || "none").toUpperCase()}</span>{" "}
-              {String(trade.team_code || "no team")}{" "}
-              size <span className="text-emerald-300">${String(trade.size_usdc || "0")}</span>{" "}
-              limit <span className="text-emerald-300">{String(trade.limit_price ?? "n/a")}</span>
+              <span className="font-semibold">{String(trade.direction || "buy_yes").toUpperCase()}</span>{" "}
+              {teamCode} size <span className="text-emerald-300">${size}</span>{" "}
+              limit <span className="text-emerald-300">{limit}</span>{" "}
+              best ask <span className="text-emerald-300">{String(trade.best_ask ?? "n/a")}</span>{" "}
+              status <span className="text-emerald-300">{status}</span>
+              {rejection && <div className="mt-2 text-red-200/80">Reason: {rejection}</div>}
             </div>
           )}
         </div>
