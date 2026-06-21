@@ -28,13 +28,73 @@ class FakeData:
 
     def get_arena_polymarket_market(self, fixture_code):
         return {
+            "fixture_id": str(fixture_code),
             "polymarket_event_slug": "mexico-south-africa",
             "outcomes": [
-                {"team_code": "MEX", "mid_price": 0.65},
-                {"team_code": "draw", "mid_price": 0.22},
-                {"team_code": "ZAF", "mid_price": 0.13},
+                {"name": "MEX", "team_code": "MEX", "token_id": "mex-token", "condition_id": "mex-condition", "mid_price": 0.65},
+                {"name": "draw", "team_code": "draw", "token_id": "draw-token", "condition_id": "draw-condition", "mid_price": 0.22},
+                {"name": "ZAF", "team_code": "ZAF", "token_id": "zaf-token", "condition_id": "zaf-condition", "mid_price": 0.13},
             ],
         }
+
+    def get_polymarket_mapping(self, fixture_id):
+        return {"mappings": [{"fixture_id": fixture_id, "polymarket_event_slug": "mexico-south-africa"}]}
+
+    def get_polymarket_event(self, event_slug):
+        return {"body": [{"slug": event_slug, "markets": []}]}
+
+    def get_polymarket_midpoint(self, token_id):
+        mids = {"mex-token": 0.65, "draw-token": 0.22, "zaf-token": 0.13}
+        return {"body": {"mid": mids.get(token_id)}}
+
+    def get_polymarket_book(self, token_id):
+        books = {
+            "mex-token": {
+                "bids": [{"price": "0.64", "size": "100"}],
+                "asks": [{"price": "0.66", "size": "50"}],
+                "min_order_size": "1",
+                "tick_size": "0.01",
+                "last_trade_price": "0.65",
+            },
+            "draw-token": {
+                "bids": [{"price": "0.21", "size": "30"}],
+                "asks": [{"price": "0.23", "size": "100"}],
+                "min_order_size": "1",
+                "tick_size": "0.01",
+                "last_trade_price": "0.22",
+            },
+            "zaf-token": {
+                "bids": [{"price": "0.12", "size": "20"}],
+                "asks": [{"price": "0.14", "size": "200"}],
+                "min_order_size": "1",
+                "tick_size": "0.01",
+                "last_trade_price": "0.13",
+            },
+        }
+        return {"body": books[token_id]}
+
+    def get_polymarket_spread(self, token_id):
+        return {"body": {"spread": "0.02" if token_id != "mex-token" else "0.01"}}
+
+    def get_polymarket_price(self, token_id, side):
+        prices = {
+            ("mex-token", "BUY"): "0.64",
+            ("mex-token", "SELL"): "0.66",
+            ("draw-token", "BUY"): "0.21",
+            ("draw-token", "SELL"): "0.23",
+            ("zaf-token", "BUY"): "0.12",
+            ("zaf-token", "SELL"): "0.14",
+        }
+        return {"body": {"price": prices[(token_id, side.upper())]}}
+
+    def get_polymarket_last_trade_price(self, token_id):
+        return {"body": {"price": {"mex-token": "0.65", "draw-token": "0.22", "zaf-token": "0.13"}[token_id]}}
+
+    def get_polymarket_tick_size(self, token_id):
+        return {"body": {"minimum_tick_size": "0.01"}}
+
+    def get_polymarket_price_history(self, token_id, interval="1d"):
+        return {"body": {"history": [{"t": 1, "p": 0.5}, {"t": 2, "p": 0.6}]}}
 
     def get_sportmonks_fixture(self, fixture_id, include=None):
         return {
@@ -188,30 +248,65 @@ def test_match_context_strips_prediction_payloads_and_uses_static_weather():
 def test_place_bet_rejects_unsafe_orders():
     toolkit = PolycognitiveToolkit(FakeData(), FakeTrading(), LedgerSink("test-session"))
 
-    too_large = toolkit.place_bet("19609127", "MEX", "6.00", 0.5)
+    too_large = toolkit.place_bet("19609127", "MEX", "16.00", 0.5)
     too_small = toolkit.place_bet("19609127", "MEX", "0.50", 0.5)
     bad_price = toolkit.place_bet("19609127", "MEX", "1.00", 1.0)
 
     assert too_large["submitted"] is False
-    assert "no more than 5" in too_large["error"]
+    assert "no more than 15" in too_large["error"]
     assert too_small["submitted"] is False
     assert "at least 1" in too_small["error"]
     assert bad_price["submitted"] is False
     assert "less than 1" in bad_price["error"]
 
 
-def test_place_bet_normalizes_order_payload_for_stair():
+def test_place_bet_uses_fok_payload_for_stair():
     trading = ArenaTradingToolkit(dry_run=True)
     trading.get_match = lambda fixture_id: {"fixture_id": str(fixture_id), "current_window": "PRE_MATCH"}
     trading.get_exposure = lambda fixture_code=None: {"positions": []}
     toolkit = PolycognitiveToolkit(FakeData(), trading, LedgerSink("test-session"))
 
-    result = toolkit.place_bet("19609127", "MEX", "1.239", 0.681534)
+    result = toolkit.place_bet("19609127", "MEX", "1.239", 0.68)
 
     payload = result["order"]["payload"]
     assert payload["fixture_id"] == "19609127"
     assert payload["usd_size"] == "1.23"
-    assert payload["limit_price"] == 0.681
+    assert payload["worst_price"] == 0.68
+    assert result["best_ask"] == 0.66
+
+
+def test_place_bet_rejects_bad_tick_and_price_below_ask():
+    toolkit = PolycognitiveToolkit(FakeData(), FakeTrading(), LedgerSink("test-session"))
+
+    bad_tick = toolkit.place_bet("19609127", "MEX", "1.00", 0.665)
+    below_ask = toolkit.place_bet("19609127", "MEX", "1.00", 0.65)
+
+    assert bad_tick["submitted"] is False
+    assert "tick size" in bad_tick["error"]
+    assert below_ask["submitted"] is False
+    assert "below current best ask" in below_ask["error"]
+
+
+def test_place_bet_allows_up_to_15_usdc():
+    toolkit = PolycognitiveToolkit(FakeData(), FakeTrading(), LedgerSink("test-session"))
+
+    result = toolkit.place_bet("19609127", "MEX", "15.00", 0.66)
+
+    assert result["order"]["payload"]["usd_size"] == "15.00"
+
+
+def test_get_executable_market_snapshot_includes_bid_ask_and_depth():
+    toolkit = PolycognitiveToolkit(FakeData(), FakeTrading(), LedgerSink("test-session"))
+
+    result = toolkit.get_executable_market_snapshot(19609127, "15.00")
+
+    mex = next(row for row in result["outcomes"] if row["team_code"] == "MEX")
+    assert mex["best_bid"] == 0.64
+    assert mex["best_ask"] == 0.66
+    assert mex["tick_size"] == 0.01
+    assert mex["min_order_size_usdc"] == 1.0
+    assert mex["depth_for_target"]["fillable"] is True
+    assert mex["depth_for_target"]["worst_price_for_target"] == 0.66
 
 
 def test_submit_prediction_uses_single_record_shape_in_dry_run():
